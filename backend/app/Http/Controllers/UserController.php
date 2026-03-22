@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
-{ 
+{
 
 // register fonction
     public function register(Request $request){
@@ -25,7 +25,7 @@ class UserController extends Controller
     return response()->json([
         'message'=>'User Registred Successfully',
         'User'=>$user
-        
+
         ],201);
     }
 
@@ -48,7 +48,7 @@ class UserController extends Controller
         'message'=>'Login Successfully',
         'User'=>$user,
         'Token'=>$token
-        
+
         ],200);
     }
 
@@ -59,7 +59,7 @@ class UserController extends Controller
     return response()->json([
       'message'=>'Log out Successfully',
 
-        
+
         ]);
 
    }
@@ -71,4 +71,51 @@ class UserController extends Controller
 
     return response()->json($user);
 }
+
+
+public function index(){
+        $users = User::all();
+        return response()->json(["users" => $users],200);
+}
+
+public function destroy($id)
+{
+    $user = User::findOrFail($id);
+
+    if ($user->id === auth()->id()) {
+        return response()->json([
+            'message' => 'You cannot delete yourself'
+        ], 403);
+    }
+
+    $user->delete();
+
+    return response()->json([
+        'message' => 'User deleted successfully'
+    ]);
+}
+
+public function updateRole(Request $request, $id)
+{
+    $user = User::findOrFail($id);
+
+    $request->validate([
+        'role' => 'required|in:student,professor,admin',
+    ]);
+
+    if(auth()->user()->role !== 'super_admin' && in_array($request->role, ['admin','super_admin'])){
+        return response()->json(['message'=>'Only super admin can assign admin role'], 403);
+    }
+
+    $user->role = $request->role;
+    $user->save();
+
+    return response()->json([
+        'message' => 'User role updated successfully',
+        'user' => $user
+    ]);
+}
+
+
+
 }

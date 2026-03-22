@@ -11,3 +11,11 @@ Route::get('/user', function (Request $request) {
 Route::post('register', [UserController::class, 'register']);
 Route::post('login', [UserController::class, 'login']);
 Route::post('logout', [UserController::class, 'logout'])->middleware('auth:sanctum');
+
+Route::middleware(['auth:sanctum','admin'])->prefix('admin')->group(function () {
+
+    Route::get('/users', [UserController::class, 'index']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    Route::put('/users/{id}', [UserController::class, 'updateRole']);
+
+});

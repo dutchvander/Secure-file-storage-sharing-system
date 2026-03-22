@@ -23,14 +23,22 @@
 .pl-blob.top {
   width: 480px;
   height: 480px;
-  background: radial-gradient(circle, rgba(99,102,241,.3) 0%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(99, 102, 241, 0.3) 0%,
+    transparent 70%
+  );
   top: -160px;
   right: -160px;
 }
 .pl-blob.bottom {
   width: 320px;
   height: 320px;
-  background: radial-gradient(circle, rgba(16,185,129,.22) 0%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(16, 185, 129, 0.22) 0%,
+    transparent 70%
+  );
   bottom: -100px;
   left: -80px;
 }
@@ -43,11 +51,17 @@
   gap: 16px;
   position: relative;
   z-index: 1;
-  animation: plFadeIn .4s cubic-bezier(.22,1,.36,1);
+  animation: plFadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes plFadeIn {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Spinning ring + shield icon ── */
@@ -68,7 +82,7 @@
 }
 .pl-ring-track {
   fill: none;
-  stroke: rgba(255,255,255,.08);
+  stroke: rgba(255, 255, 255, 0.08);
   stroke-width: 3;
 }
 .pl-ring-progress {
@@ -76,16 +90,20 @@
   stroke: url(#plGrad);
   stroke-width: 3;
   stroke-linecap: round;
-  stroke-dasharray: 213;       /* 2π × 34 ≈ 213 */
+  stroke-dasharray: 213; /* 2π × 34 ≈ 213 */
   stroke-dashoffset: 213;
-  animation: plRingFill 1.6s cubic-bezier(.4,0,.2,1) forwards .1s;
+  animation: plRingFill 1.6s cubic-bezier(0.4, 0, 0.2, 1) forwards 0.1s;
 }
 @keyframes plRingFill {
-  to { stroke-dashoffset: 0; }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 /* Gradient for the ring — defined inline via SVG defs trick */
-.pl-ring-svg defs { display: block; }
+.pl-ring-svg defs {
+  display: block;
+}
 
 /* Shield icon centered */
 .pl-logo-icon {
@@ -104,8 +122,15 @@
   animation: plPulse 1.8s ease-in-out infinite;
 }
 @keyframes plPulse {
-  0%, 100% { opacity: 1;   transform: scale(1); }
-  50%       { opacity: .75; transform: scale(.93); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(0.93);
+  }
 }
 
 /* ── Text ── */
@@ -114,12 +139,12 @@
   font-size: 22px;
   font-weight: 700;
   color: #fff;
-  letter-spacing: .02em;
+  letter-spacing: 0.02em;
   margin: 0;
 }
 .pl-sub {
   font-size: 13.5px;
-  color: rgba(255,255,255,.45);
+  color: rgba(255, 255, 255, 0.45);
   margin: 0;
 }
 
@@ -134,12 +159,23 @@
   height: 6px;
   border-radius: 50%;
   background: linear-gradient(135deg, #6366f1, #10b981);
-  animation: plBounce .9s ease-in-out infinite;
+  animation: plBounce 0.9s ease-in-out infinite;
 }
-.pl-dots span:nth-child(2) { animation-delay: .15s; }
-.pl-dots span:nth-child(3) { animation-delay: .30s; }
+.pl-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.pl-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
 
 @keyframes plBounce {
-  0%, 100% { transform: translateY(0);   opacity: .5; }
-  50%       { transform: translateY(-7px); opacity: 1; }
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-7px);
+    opacity: 1;
+  }
 }
