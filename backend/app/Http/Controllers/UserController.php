@@ -49,7 +49,7 @@ class UserController extends Controller
         'User'=>$user,
         'Token'=>$token
         
-        ],201);
+        ],200);
     }
 
 // logout fonction

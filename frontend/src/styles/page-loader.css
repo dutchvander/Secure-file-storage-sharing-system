@@ -1,0 +1,145 @@
+/* ═══════════════════════════════════════════════════════════════
+   page-loader.css — Transition loader between Login → Dashboard
+   Same design language as auth.css
+═══════════════════════════════════════════════════════════════ */
+
+.pl-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #1a1f3c 0%, #2d3561 60%, #1e2a5e 100%);
+  font-family: "Outfit", sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Decorative glows (same as auth left panel) ── */
+.pl-blob {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.pl-blob.top {
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(99,102,241,.3) 0%, transparent 70%);
+  top: -160px;
+  right: -160px;
+}
+.pl-blob.bottom {
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(16,185,129,.22) 0%, transparent 70%);
+  bottom: -100px;
+  left: -80px;
+}
+
+/* ── Card ── */
+.pl-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+  animation: plFadeIn .4s cubic-bezier(.22,1,.36,1);
+}
+@keyframes plFadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Spinning ring + shield icon ── */
+.pl-logo-ring {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 4px;
+}
+
+/* SVG spinning ring */
+.pl-ring-svg {
+  position: absolute;
+  inset: 0;
+  width: 80px;
+  height: 80px;
+  transform: rotate(-90deg);
+}
+.pl-ring-track {
+  fill: none;
+  stroke: rgba(255,255,255,.08);
+  stroke-width: 3;
+}
+.pl-ring-progress {
+  fill: none;
+  stroke: url(#plGrad);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 213;       /* 2π × 34 ≈ 213 */
+  stroke-dashoffset: 213;
+  animation: plRingFill 1.6s cubic-bezier(.4,0,.2,1) forwards .1s;
+}
+@keyframes plRingFill {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Gradient for the ring — defined inline via SVG defs trick */
+.pl-ring-svg defs { display: block; }
+
+/* Shield icon centered */
+.pl-logo-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+}
+.pl-logo-icon svg {
+  width: 32px;
+  height: 32px;
+  stroke: #fff;
+  animation: plPulse 1.8s ease-in-out infinite;
+}
+@keyframes plPulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: .75; transform: scale(.93); }
+}
+
+/* ── Text ── */
+.pl-title {
+  font-family: "Playfair Display", serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: .02em;
+  margin: 0;
+}
+.pl-sub {
+  font-size: 13.5px;
+  color: rgba(255,255,255,.45);
+  margin: 0;
+}
+
+/* ── Bouncing dots ── */
+.pl-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.pl-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #10b981);
+  animation: plBounce .9s ease-in-out infinite;
+}
+.pl-dots span:nth-child(2) { animation-delay: .15s; }
+.pl-dots span:nth-child(3) { animation-delay: .30s; }
+
+@keyframes plBounce {
+  0%, 100% { transform: translateY(0);   opacity: .5; }
+  50%       { transform: translateY(-7px); opacity: 1; }
+}
