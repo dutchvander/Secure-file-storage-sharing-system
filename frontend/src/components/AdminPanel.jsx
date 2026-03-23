@@ -959,7 +959,7 @@ export default function AdminPanel({ onLogout }) {
         }
         return r.json();
       })
-      .then((data) => setUsers(data?.users ?? []))
+      .then((data) => setUsers(data?.data ?? []))
       .catch(() => setError("Failed to load users. Please try again."))
       .finally(() => setLoading(false));
   }, []);

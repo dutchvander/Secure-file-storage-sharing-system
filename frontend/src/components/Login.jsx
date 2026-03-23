@@ -149,7 +149,7 @@ export default function Login({ onSwitch, onSuccess }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Login failed");
-      localStorage.setItem("token", data.Token);
+      localStorage.setItem("token", data.token);
       setAlert({ type: "success", msg: "Login successful! Redirecting…" });
       // ─── ينادي onSuccess فوراً، الـ App يتحكم في الـ timing ───
       onSuccess?.();
