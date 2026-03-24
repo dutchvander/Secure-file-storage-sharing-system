@@ -6,7 +6,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 class UserController extends Controller
 {
     // ─────────────────────────────────────────
@@ -36,28 +37,57 @@ class UserController extends Controller
     // ─────────────────────────────────────────
     // LOGIN
     // ─────────────────────────────────────────
-    public function login(Request $request)
-    {
-        $request->validate([
-            'email'    => 'required|string|email',
-            'password' => 'required|string',
-        ]);
+ public function login(Request $request)
+{
+    $request->validate([
+        'email'    => 'required|string|email',
+        'password' => 'required|string',
+    ]);
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            return response()->json([
-                'message' => 'Invalid email or password',
-            ], 401);
-        }
+    // 🔐 مفتاح فريد لكل مستخدم + IP
+    $key = 'login|' . Str::lower($request->email) . '|' . $request->ip();
 
-        $user  = User::where('email', $request->email)->firstOrFail();
-        $token = $user->createToken('auth_token')->plainTextToken;
+    // 🚫 تحقق هل تجاوز عدد المحاولات (5)
+    if (RateLimiter::tooManyAttempts($key, 5)) {
+        $seconds = RateLimiter::availableIn($key);
+        $minutes = ceil($seconds / 60);
 
         return response()->json([
-            'message' => 'Login successfully',
-            'user'    => $user,
-            'token'   => $token,
-        ], 200);
+            'message'            => "Too many failed attempts. Please try again after {$minutes} minute(s).",
+            'retry_after_seconds'=> $seconds,
+            'retry_after_minutes'=> $minutes,
+            'locked'             => true,
+        ], 429);
     }
+
+    // ❌ كلمة المرور خاطئة
+    if (!Auth::attempt($request->only('email', 'password'))) {
+
+        // زيادة العداد — الحظر لمدة ساعة (3600 ثانية)
+        RateLimiter::hit($key, 3600);
+
+        $attempts  = RateLimiter::attempts($key);
+        $remaining = max(0, 5 - $attempts);
+
+        return response()->json([
+            'message'           => 'Invalid email or password.',
+            'attempts_remaining'=> $remaining,
+            'locked'            => $remaining === 0,
+        ], 401);
+    }
+
+    // ✅ تسجيل دخول ناجح — مسح العداد
+    RateLimiter::clear($key);
+
+    $user  = User::where('email', $request->email)->firstOrFail();
+    $token = $user->createToken('auth_token')->plainTextToken;
+
+    return response()->json([
+        'message' => 'Login successfully',
+        'user'    => $user,
+        'token'   => $token,
+    ], 200);
+}
 
     // ─────────────────────────────────────────
     // LOGOUT
