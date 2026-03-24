@@ -260,11 +260,89 @@ const Ico = {
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </svg>
   ),
+  RefreshCw: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="23 4 23 10 17 10" />
+      <polyline points="1 20 1 14 7 14" />
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+    </svg>
+  ),
+  Upload: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  ),
+  Download: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  ),
+  Share2: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+    </svg>
+  ),
+  Eye: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  ),
 };
 
 /* ═══════════════════════════════════════════════════════════════
    HELPERS & CONSTANTS
 ═══════════════════════════════════════════════════════════════ */
+const API = "http://127.0.0.1:8000/api";
+const authHeaders = () => ({
+  Authorization: `Bearer ${localStorage.getItem("token")}`,
+  Accept: "application/json",
+  "Content-Type": "application/json",
+});
+
 const initials = (name = "") =>
   name
     .split(" ")
@@ -295,9 +373,6 @@ const NAV = [
   { key: "logs", label: "Audit Logs", icon: <Ico.FileText /> },
 ];
 
-/* Role options per viewer role:
-   - super_admin → student | professor | admin
-   - admin       → student | professor  only         */
 const ROLES_FOR = {
   super_admin: [
     { value: "student", label: "Student", color: "#0ea5e9" },
@@ -310,6 +385,54 @@ const ROLES_FOR = {
   ],
 };
 
+/* ── Action display config ── */
+const ACTION_META = {
+  upload_file: {
+    label: "Upload",
+    color: "#6366f1",
+    bg: "rgba(99,102,241,.08)",
+    icon: <Ico.Upload />,
+  },
+  download_file: {
+    label: "Download",
+    color: "#059669",
+    bg: "rgba(5,150,105,.08)",
+    icon: <Ico.Download />,
+  },
+  delete_file: {
+    label: "Delete",
+    color: "#dc2626",
+    bg: "rgba(220,38,38,.08)",
+    icon: <Ico.Trash />,
+  },
+  share_file: {
+    label: "Share",
+    color: "#f59e0b",
+    bg: "rgba(245,158,11,.08)",
+    icon: <Ico.Share2 />,
+  },
+  revoke_share: {
+    label: "Revoke",
+    color: "#6b7280",
+    bg: "rgba(107,114,128,.08)",
+    icon: <Ico.XCircle />,
+  },
+  login: {
+    label: "Login",
+    color: "#0ea5e9",
+    bg: "rgba(14,165,233,.08)",
+    icon: <Ico.Eye />,
+  },
+};
+
+const getActionMeta = (action) =>
+  ACTION_META[action] ?? {
+    label: action,
+    color: "#6b7280",
+    bg: "rgba(107,114,128,.08)",
+    icon: <Ico.FileText />,
+  };
+
 /* ═══════════════════════════════════════════════════════════════
    TOAST
 ═══════════════════════════════════════════════════════════════ */
@@ -319,7 +442,6 @@ function Toast({ toast, onDone }) {
     const t = setTimeout(onDone, 3200);
     return () => clearTimeout(t);
   }, [toast, onDone]);
-
   if (!toast) return null;
   return (
     <div className={`ad-toast ${toast.type}`}>
@@ -374,23 +496,12 @@ function DeleteModal({ user, onCancel, onConfirm, loading }) {
 
 /* ═══════════════════════════════════════════════════════════════
    UPDATE ROLE MODAL
-   viewerRole → determines which options are shown
 ═══════════════════════════════════════════════════════════════ */
 function UpdateRoleModal({ user, viewerRole, onCancel, onConfirm, loading }) {
-  /* selected يبدأ من role المستخدم عند فتح المودال.
-     المودال يُعاد mount من الصفر في كل مرة عبر key={user?.id}
-     في مكان الاستدعاء، لذا useState وحده كافٍ — لا useEffect. */
   const [selected, setSelected] = useState(user?.role ?? "student");
-
   if (!user) return null;
-
-  /* options available to the current admin */
   const options = ROLES_FOR[viewerRole] ?? ROLES_FOR.admin;
-
-  /* if the target user's current role is not in available options
-     (e.g. admin viewing an admin user) — show locked state        */
   const isLocked = !options.some((o) => o.value === user.role);
-
   return (
     <div className="ad-modal-overlay" onClick={onCancel}>
       <div className="ad-modal" onClick={(e) => e.stopPropagation()}>
@@ -401,8 +512,6 @@ function UpdateRoleModal({ user, viewerRole, onCancel, onConfirm, loading }) {
         <p className="ad-modal-desc">
           Change the role for <strong>{user.name}</strong>.
         </p>
-
-        {/* ── Locked notice for admin trying to edit admin/super_admin ── */}
         {isLocked ? (
           <div className="ad-role-locked">
             <span className="ad-role-locked-icon">
@@ -411,9 +520,8 @@ function UpdateRoleModal({ user, viewerRole, onCancel, onConfirm, loading }) {
             <div>
               <p className="ad-role-locked-title">Permission restricted</p>
               <p className="ad-role-locked-desc">
-                You don't have permission to change the role of a{" "}
-                <strong>{ROLE_LABEL[user.role]}</strong>. Only a Super Admin can
-                modify this account.
+                Only a Super Admin can modify a{" "}
+                <strong>{ROLE_LABEL[user.role]}</strong>.
               </p>
             </div>
           </div>
@@ -437,14 +545,11 @@ function UpdateRoleModal({ user, viewerRole, onCancel, onConfirm, loading }) {
             ))}
           </div>
         )}
-
-        {/* ── Super-admin-only note ── */}
         {viewerRole === "super_admin" && (
           <p className="ad-role-note">
             <Ico.Crown /> You have full role control as Super Admin.
           </p>
         )}
-
         <div className="ad-modal-actions">
           <button
             className="ad-modal-cancel"
@@ -606,23 +711,24 @@ function OverviewTab({ users }) {
 
 /* ═══════════════════════════════════════════════════════════════
    USERS TAB
-   viewerRole is passed down to control Update button visibility
 ═══════════════════════════════════════════════════════════════ */
 function UsersTab({ users, viewerRole, onDelete, onUpdate }) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [page, setPage] = useState(1);
 
-  const filtered = useMemo(() => {
-    return users.filter((u) => {
-      const matchRole = roleFilter === "all" || u.role === roleFilter;
-      const matchSearch =
-        !search ||
-        u.name.toLowerCase().includes(search.toLowerCase()) ||
-        u.email.toLowerCase().includes(search.toLowerCase());
-      return matchRole && matchSearch;
-    });
-  }, [users, search, roleFilter]);
+  const filtered = useMemo(
+    () =>
+      users.filter((u) => {
+        const matchRole = roleFilter === "all" || u.role === roleFilter;
+        const matchSearch =
+          !search ||
+          u.name.toLowerCase().includes(search.toLowerCase()) ||
+          u.email.toLowerCase().includes(search.toLowerCase());
+        return matchRole && matchSearch;
+      }),
+    [users, search, roleFilter],
+  );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -631,30 +737,14 @@ function UsersTab({ users, viewerRole, onDelete, onUpdate }) {
     safePage * PAGE_SIZE,
   );
 
-  const handleSearch = (e) => {
-    setSearch(e.target.value);
-    setPage(1);
-  };
-  const handleFilter = (key) => {
-    setRoleFilter(key);
-    setPage(1);
-  };
-
-  /* Can the viewer delete a given user?
-     - super_admin → cannot delete other super_admin, can delete anyone else
-     - admin       → can only delete student / professor               */
-  const canDelete = (u) => {
-    if (viewerRole === "super_admin") return u.role !== "super_admin";
-    return u.role === "student" || u.role === "professor";
-  };
-
-  /* Can the viewer update a given user's role?
-     - super_admin → anyone except themselves (or other super_admin)
-     - admin       → only student / professor                         */
-  const canUpdate = (u) => {
-    if (viewerRole === "super_admin") return u.role !== "super_admin";
-    return u.role === "student" || u.role === "professor";
-  };
+  const canDelete = (u) =>
+    viewerRole === "super_admin"
+      ? u.role !== "super_admin"
+      : u.role === "student" || u.role === "professor";
+  const canUpdate = (u) =>
+    viewerRole === "super_admin"
+      ? u.role !== "super_admin"
+      : u.role === "student" || u.role === "professor";
 
   const FILTERS = [
     { key: "all", label: "All" },
@@ -676,8 +766,6 @@ function UsersTab({ users, viewerRole, onDelete, onUpdate }) {
           </div>
         </div>
       </div>
-
-      {/* Toolbar */}
       <div className="ad-table-toolbar">
         <div className="ad-search-wrap">
           <span className="ad-search-icon">
@@ -687,7 +775,10 @@ function UsersTab({ users, viewerRole, onDelete, onUpdate }) {
             className="ad-search"
             placeholder="Search by name or email…"
             value={search}
-            onChange={handleSearch}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
           />
         </div>
         <div className="ad-filter-pills">
@@ -695,15 +786,16 @@ function UsersTab({ users, viewerRole, onDelete, onUpdate }) {
             <button
               key={f.key}
               className={`ad-pill ${f.key} ${roleFilter === f.key ? "active" : ""}`}
-              onClick={() => handleFilter(f.key)}
+              onClick={() => {
+                setRoleFilter(f.key);
+                setPage(1);
+              }}
             >
               {f.label}
             </button>
           ))}
         </div>
       </div>
-
-      {/* Table */}
       <div className="ad-table-wrap">
         <table className="ad-table">
           <thead>
@@ -768,22 +860,17 @@ function UsersTab({ users, viewerRole, onDelete, onUpdate }) {
                         })
                       : "—"}
                   </td>
-
-                  {/* ── Actions ── */}
                   <td>
                     <div className="ad-actions-cell">
-                      {/* Update button — shown only when viewer has permission */}
                       {canUpdate(u) ? (
                         <button
                           className="ad-upd-btn"
                           onClick={() => onUpdate(u)}
                           title="Update role"
                         >
-                          <Ico.UserEdit />
-                          Update
+                          <Ico.UserEdit /> Update
                         </button>
                       ) : (
-                        /* Lock icon for restricted rows */
                         <span
                           className="ad-action-locked"
                           title="Cannot update this role"
@@ -791,16 +878,13 @@ function UsersTab({ users, viewerRole, onDelete, onUpdate }) {
                           <Ico.Lock />
                         </span>
                       )}
-
-                      {/* Delete button */}
                       {canDelete(u) ? (
                         <button
                           className="ad-del-btn"
                           onClick={() => onDelete(u)}
                           title="Delete user"
                         >
-                          <Ico.Trash />
-                          Delete
+                          <Ico.Trash /> Delete
                         </button>
                       ) : (
                         <span
@@ -818,8 +902,6 @@ function UsersTab({ users, viewerRole, onDelete, onUpdate }) {
           </tbody>
         </table>
       </div>
-
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="ad-pagination">
           <span className="ad-page-info">
@@ -859,46 +941,290 @@ function UsersTab({ users, viewerRole, onDelete, onUpdate }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   AUDIT LOGS TAB
+   AUDIT LOGS TAB  ← الجديد
 ═══════════════════════════════════════════════════════════════ */
 function LogsTab() {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
+  const [actionFilter, setActionFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const fetchLogs = async (p = 1, act = actionFilter, q = search) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({ page: p });
+      if (act !== "all") params.append("action", act);
+      if (q.trim()) params.append("search", q.trim());
+
+      const res = await fetch(`${API}/admin/logs?${params}`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to fetch logs");
+      const data = await res.json();
+      setLogs(data.logs ?? []);
+      setTotalPages(data.pages ?? 1);
+      setTotal(data.total ?? 0);
+      setPage(data.page ?? 1);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs(1, actionFilter, search);
+  }, []);
+
+  const handleSearch = (e) => {
+    setSearch(e.target.value);
+    fetchLogs(1, actionFilter, e.target.value);
+  };
+
+  const handleActionFilter = (act) => {
+    setActionFilter(act);
+    fetchLogs(1, act, search);
+  };
+
+  const handlePage = (p) => fetchLogs(p, actionFilter, search);
+
+  const ACTION_FILTERS = [
+    { key: "all", label: "All" },
+    { key: "upload_file", label: "Upload" },
+    { key: "download_file", label: "Download" },
+    { key: "delete_file", label: "Delete" },
+    { key: "share_file", label: "Share" },
+    { key: "revoke_share", label: "Revoke" },
+  ];
+
   return (
     <div className="ad-table-section">
+      {/* ── Header ── */}
       <div className="ad-table-header">
         <div>
           <div className="ad-table-title">Audit Logs</div>
           <div className="ad-table-count">
-            All admin actions are recorded here
+            {total} event{total !== 1 ? "s" : ""} recorded
           </div>
         </div>
-      </div>
-      <div
-        style={{ padding: "60px 28px", textAlign: "center", color: "#9ca3af" }}
-      >
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            margin: "0 auto 14px",
-            color: "#e5e7eb",
-          }}
+        <button
+          className="ad-refresh-btn"
+          onClick={() => fetchLogs(page, actionFilter, search)}
+          disabled={loading}
         >
-          <Ico.FileText />
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 14, height: 14, display: "flex" }}>
+              <Ico.RefreshCw />
+            </span>
+            Refresh
+          </span>
+        </button>
+      </div>
+
+      {/* ── Toolbar ── */}
+      <div className="ad-table-toolbar">
+        <div className="ad-search-wrap">
+          <span className="ad-search-icon">
+            <Ico.Search />
+          </span>
+          <input
+            className="ad-search"
+            placeholder="Search by user or IP…"
+            value={search}
+            onChange={handleSearch}
+          />
         </div>
-        <p
-          style={{
-            fontSize: 15,
-            fontFamily: "'Playfair Display',serif",
-            color: "#374151",
-            marginBottom: 6,
-          }}
-        >
-          Coming soon
-        </p>
-        <p style={{ fontSize: 13.5, lineHeight: 1.6 }}>
-          Real-time audit log viewer will be available in the next release.
-        </p>
+        <div className="ad-filter-pills">
+          {ACTION_FILTERS.map((f) => (
+            <button
+              key={f.key}
+              className={`ad-pill ${f.key === "all" ? "all" : ""} ${actionFilter === f.key ? "active" : ""}`}
+              onClick={() => handleActionFilter(f.key)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* ── Table ── */}
+      <div className="ad-table-wrap">
+        {loading ? (
+          <div className="ad-loading" style={{ padding: "48px" }}>
+            <span className="ad-spinner dark" />
+            <p>Loading logs…</p>
+          </div>
+        ) : error ? (
+          <div className="ad-error-box" style={{ margin: "24px" }}>
+            {error}
+          </div>
+        ) : logs.length === 0 ? (
+          <div className="ad-table-empty" style={{ padding: "56px" }}>
+            <Ico.FileText />
+            <p>No audit logs found.</p>
+          </div>
+        ) : (
+          <table className="ad-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>File</th>
+                <th>IP Address</th>
+                <th>Date & Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((log, idx) => {
+                const meta = getActionMeta(log.action);
+                return (
+                  <tr key={log.id}>
+                    <td style={{ color: "#9ca3af", fontSize: "12px" }}>
+                      {(page - 1) * 15 + idx + 1}
+                    </td>
+                    <td>
+                      {log.user ? (
+                        <div className="ad-user-cell">
+                          <div
+                            className="ad-user-avatar"
+                            style={{
+                              background: avatarColor(log.user.role),
+                              width: 30,
+                              height: 30,
+                              fontSize: 11,
+                            }}
+                          >
+                            {initials(log.user.name)}
+                          </div>
+                          <div>
+                            <div
+                              className="ad-user-name"
+                              style={{ fontSize: 13 }}
+                            >
+                              {log.user.name}
+                            </div>
+                            <div className="ad-user-id">{log.user.email}</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <span style={{ color: "#9ca3af", fontSize: 13 }}>
+                          Deleted user
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <span
+                        className="ad-log-action-badge"
+                        style={{
+                          background: meta.bg,
+                          color: meta.color,
+                          borderColor: meta.color + "33",
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 12,
+                            height: 12,
+                            display: "flex",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {meta.icon}
+                        </span>
+                        {meta.label}
+                      </span>
+                    </td>
+                    <td
+                      style={{
+                        fontSize: 13,
+                        color: "#374151",
+                        maxWidth: 180,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {log.file?.original_name ?? (
+                        <span style={{ color: "#d1d5db" }}>—</span>
+                      )}
+                    </td>
+                    <td>
+                      <code className="ad-log-ip">{log.ip_address ?? "—"}</code>
+                    </td>
+                    <td
+                      style={{
+                        color: "#9ca3af",
+                        fontSize: "12.5px",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {log.created_at
+                        ? new Date(log.created_at).toLocaleString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* ── Pagination ── */}
+      {totalPages > 1 && !loading && (
+        <div className="ad-pagination">
+          <span className="ad-page-info">
+            Page {page} of {totalPages} · {total} total
+          </span>
+          <div className="ad-page-btns">
+            <button
+              className="ad-page-btn"
+              onClick={() => handlePage(page - 1)}
+              disabled={page === 1}
+            >
+              <Ico.ChevronLeft />
+            </button>
+            {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+              const n =
+                totalPages <= 7
+                  ? i + 1
+                  : page <= 4
+                    ? i + 1
+                    : page >= totalPages - 3
+                      ? totalPages - 6 + i
+                      : page - 3 + i;
+              return (
+                <button
+                  key={n}
+                  className={`ad-page-btn${page === n ? " active" : ""}`}
+                  onClick={() => handlePage(n)}
+                >
+                  {n}
+                </button>
+              );
+            })}
+            <button
+              className="ad-page-btn"
+              onClick={() => handlePage(page + 1)}
+              disabled={page === totalPages}
+            >
+              <Ico.ChevronRight />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -911,22 +1237,16 @@ export default function AdminPanel({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [active, setActive] = useState("overview");
-
-  /* viewerRole = role of the currently logged-in admin */
   const [viewerRole, setViewerRole] = useState(
     localStorage.getItem("role") ?? "admin",
   );
-
   const [toDelete, setToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
-
   const [toUpdate, setToUpdate] = useState(null);
   const [updating, setUpdating] = useState(false);
-
   const [loggingOut, setLoggingOut] = useState(false);
   const [toast, setToast] = useState(null);
 
-  /* ── Fetch users + confirm viewer role from API ── */
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -934,10 +1254,7 @@ export default function AdminPanel({ onLogout }) {
       return;
     }
 
-    /* fetch viewer's own profile to confirm role */
-    fetch("http://127.0.0.1:8000/api/user", {
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-    })
+    fetch(`${API}/user`, { headers: authHeaders() })
       .then((r) => r.json())
       .then((me) => {
         if (me?.role) {
@@ -947,10 +1264,7 @@ export default function AdminPanel({ onLogout }) {
       })
       .catch(() => {});
 
-    /* fetch all users */
-    fetch("http://127.0.0.1:8000/api/admin/users", {
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-    })
+    fetch(`${API}/admin/users`, { headers: authHeaders() })
       .then((r) => {
         if (r.status === 401 || r.status === 403) {
           localStorage.removeItem("token");
@@ -960,55 +1274,38 @@ export default function AdminPanel({ onLogout }) {
         return r.json();
       })
       .then((data) => setUsers(data?.data ?? []))
-      .catch(() => setError("Failed to load users. Please try again."))
+      .catch(() => setError("Failed to load users."))
       .finally(() => setLoading(false));
   }, []);
 
-  /* ── Delete user ── */
   const confirmDelete = async () => {
     if (!toDelete) return;
     setDeleting(true);
-    const token = localStorage.getItem("token");
     try {
-      const res = await fetch(
-        `http://127.0.0.1:8000/api/admin/users/${toDelete.id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
-        },
-      );
+      const res = await fetch(`${API}/admin/users/${toDelete.id}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
       if (!res.ok) throw new Error();
       setUsers((prev) => prev.filter((u) => u.id !== toDelete.id));
       setToast({ type: "success", msg: `${toDelete.name} has been removed.` });
     } catch {
-      setToast({ type: "error", msg: "Failed to delete user. Try again." });
+      setToast({ type: "error", msg: "Failed to delete user." });
     } finally {
       setDeleting(false);
       setToDelete(null);
     }
   };
 
-  /* ── Update role ── */
   const confirmUpdate = async (newRole) => {
     if (!toUpdate) return;
     setUpdating(true);
-    const token = localStorage.getItem("token");
     try {
-      const res = await fetch(
-        `http://127.0.0.1:8000/api/admin/users/${toUpdate.id}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ role: newRole }),
-        },
-      );
+      const res = await fetch(`${API}/admin/users/${toUpdate.id}`, {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify({ role: newRole }),
+      });
       if (!res.ok) throw new Error();
       setUsers((prev) =>
         prev.map((u) => (u.id === toUpdate.id ? { ...u, role: newRole } : u)),
@@ -1018,25 +1315,17 @@ export default function AdminPanel({ onLogout }) {
         msg: `${toUpdate.name}'s role updated to ${ROLE_LABEL[newRole]}.`,
       });
     } catch {
-      setToast({ type: "error", msg: "Failed to update role. Try again." });
+      setToast({ type: "error", msg: "Failed to update role." });
     } finally {
       setUpdating(false);
       setToUpdate(null);
     }
   };
 
-  /* ── Logout ── */
   const handleLogout = async () => {
     setLoggingOut(true);
-    const token = localStorage.getItem("token");
     try {
-      await fetch("http://127.0.0.1:8000/api/logout", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
-      });
+      await fetch(`${API}/logout`, { method: "POST", headers: authHeaders() });
     } finally {
       localStorage.removeItem("token");
       localStorage.removeItem("role");
@@ -1060,10 +1349,7 @@ export default function AdminPanel({ onLogout }) {
       title: "User Management",
       sub: "View, search, update roles and remove users.",
     },
-    logs: {
-      title: "Audit Logs",
-      sub: "Full record of all administrative actions.",
-    },
+    logs: { title: "Audit Logs", sub: "Full record of all system actions." },
   };
 
   return (
@@ -1076,15 +1362,11 @@ export default function AdminPanel({ onLogout }) {
           </div>
           <span className="ad-logo-name">SecureVault</span>
         </div>
-
-        {/* Badge differs per role */}
         <div className={`ad-role-badge ${isSuperAdmin ? "super" : ""}`}>
           <span className="ad-role-dot" />
           {isSuperAdmin ? "Super Admin" : "Admin Panel"}
         </div>
-
         <div className="ad-sidebar-divider" />
-
         <nav className="ad-nav">
           <div className="ad-nav-section">Management</div>
           {NAV.map((item) => (
@@ -1100,18 +1382,7 @@ export default function AdminPanel({ onLogout }) {
           <div className="ad-nav-section" style={{ marginTop: 12 }}>
             Account
           </div>
-          {/* <button
-            className="ad-nav-item danger"
-            onClick={handleLogout}
-            disabled={loggingOut}
-          >
-            <span className="ad-nav-icon">
-              <Ico.LogOut />
-            </span>
-            <span>Logout</span>
-          </button> */}
         </nav>
-
         <div className="ad-sidebar-footer">
           <div className={`ad-mini-avatar ${isSuperAdmin ? "super" : ""}`}>
             {initials(currentAdmin.name)}
@@ -1159,7 +1430,6 @@ export default function AdminPanel({ onLogout }) {
             </div>
           )}
           {error && !loading && <div className="ad-error-box">{error}</div>}
-
           {!loading && !error && (
             <>
               {active === "overview" && <OverviewTab users={users} />}
@@ -1167,8 +1437,8 @@ export default function AdminPanel({ onLogout }) {
                 <UsersTab
                   users={users}
                   viewerRole={viewerRole}
-                  onDelete={(u) => setToDelete(u)}
-                  onUpdate={(u) => setToUpdate(u)}
+                  onDelete={setToDelete}
+                  onUpdate={setToUpdate}
                 />
               )}
               {active === "logs" && <LogsTab />}
@@ -1177,18 +1447,12 @@ export default function AdminPanel({ onLogout }) {
         </div>
       </main>
 
-      {/* ── DELETE MODAL ── */}
       <DeleteModal
         user={toDelete}
         onCancel={() => setToDelete(null)}
         onConfirm={confirmDelete}
         loading={deleting}
       />
-
-      {/* ── UPDATE ROLE MODAL ── */}
-      {/* key={toUpdate?.id} يجعل React يعيد mount المودال من صفر
-          في كل مرة يُفتح لمستخدم مختلف، فـ useState يأخذ القيمة
-          الصحيحة مباشرة بدون الحاجة لأي useEffect.             */}
       <UpdateRoleModal
         key={toUpdate?.id}
         user={toUpdate}
@@ -1197,8 +1461,6 @@ export default function AdminPanel({ onLogout }) {
         onConfirm={confirmUpdate}
         loading={updating}
       />
-
-      {/* ── TOAST ── */}
       <Toast toast={toast} onDone={() => setToast(null)} />
     </div>
   );
