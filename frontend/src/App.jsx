@@ -1,26 +1,39 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Dashboard from "./components/Dashboard";
 import AdminPanel from "./components/AdminPanel";
 import PageLoader from "./components/PageLoader";
 
-/* ── helper: قراءة الـ role من الـ localStorage ── */
+/* ── helpers ── */
 const getSavedRole = () => localStorage.getItem("role");
-
-/* ── هل الـ role من مستوى إداري (admin أو super_admin)؟ ── */
 const isAdminRole = (r) => r === "admin" || r === "super_admin";
+const hasToken = () => !!localStorage.getItem("token");
+
+/* ── حماية المسارات ── */
+const PrivateRoute = ({ children }) => {
+  return hasToken() ? children : <Navigate to="/login" replace />;
+};
+
+const AdminRoute = ({ children }) => {
+  if (!hasToken()) return <Navigate to="/login" replace />;
+  return isAdminRole(getSavedRole())
+    ? children
+    : <Navigate to="/dashboard" replace />;
+};
 
 function App() {
-  // "login" | "register" | "logging-in" | "dashboard" | "admin" | "logging-out"
-  const [page, setPage] = useState(() => {
-    if (!localStorage.getItem("token")) return "login";
-    return isAdminRole(getSavedRole()) ? "admin" : "dashboard";
-  });
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState("");
 
-  // بعد نجاح اللوغين → loader → Dashboard أو AdminPanel حسب الـ role
+  /* ── بعد تسجيل الدخول ── */
   const handleLoginSuccess = async () => {
-    setPage("logging-in");
+    setLoadingMsg("Securing your workspace…");
+    setLoading(true);
+
     try {
       const token = localStorage.getItem("token");
       const res = await fetch("http://127.0.0.1:8000/api/user", {
@@ -32,41 +45,73 @@ function App() {
       const data = await res.json();
       const role = data?.role ?? "student";
       localStorage.setItem("role", role);
-      setTimeout(
-        () => setPage(isAdminRole(role) ? "admin" : "dashboard"),
-        2000,
-      );
+
+      setTimeout(() => {
+        setLoading(false);
+        navigate(isAdminRole(role) ? "/admin" : "/dashboard");
+      }, 1500);
     } catch {
       localStorage.setItem("role", "student");
-      setTimeout(() => setPage("dashboard"), 2000);
+      setTimeout(() => {
+        setLoading(false);
+        navigate("/dashboard");
+      }, 1500);
     }
   };
 
-  // بعد الضغط على Logout → loader → Login
+  /* ── تسجيل الخروج ── */
   const handleLogout = () => {
     localStorage.removeItem("role");
-    setPage("logging-out");
-    setTimeout(() => setPage("login"), 2000);
+    setLoadingMsg("Signing you out safely…");
+    setLoading(true);
+
+    setTimeout(() => {
+      setLoading(false);
+      navigate("/login");
+    }, 1500);
   };
 
+  if (loading) return <PageLoader message={loadingMsg} />;
+
   return (
-    <div className="App">
-      {page === "logging-in" && (
-        <PageLoader message="Securing your workspace…" />
-      )}
-      {page === "logging-out" && (
-        <PageLoader message="Signing you out safely…" />
-      )}
-      {page === "dashboard" && <Dashboard onLogout={handleLogout} />}
-      {page === "admin" && <AdminPanel onLogout={handleLogout} />}
-      {page === "login" && (
-        <Login
-          onSwitch={() => setPage("register")}
-          onSuccess={handleLoginSuccess}
-        />
-      )}
-      {page === "register" && <Register onSwitch={() => setPage("login")} />}
-    </div>
+    <Routes>
+      <Route
+        path="/login"
+        element={<Login onSwitch={() => navigate("/register")} onSuccess={handleLoginSuccess} />}
+      />
+      <Route
+        path="/register"
+        element={<Register onSwitch={() => navigate("/login")} />}
+      />
+
+      <Route
+        path="/dashboard"
+        element={
+          <PrivateRoute>
+            <Dashboard onLogout={handleLogout} />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <AdminPanel onLogout={handleLogout} />
+          </AdminRoute>
+        }
+      />
+
+      {/* الصفحة الافتراضية */}
+      <Route
+        path="/"
+        element={
+          hasToken()
+            ? <Navigate to={isAdminRole(getSavedRole()) ? "/admin" : "/dashboard"} />
+            : <Navigate to="/login" />
+        }
+      />
+    </Routes>
   );
 }
 
