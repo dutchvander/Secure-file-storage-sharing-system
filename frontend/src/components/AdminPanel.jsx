@@ -61,6 +61,62 @@ const Ico = {
       <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   ),
+  LogIn: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+      <polyline points="10 17 15 12 10 7" />
+      <line x1="15" y1="12" x2="3" y2="12" />
+    </svg>
+  ),
+  UserPlus: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="8.5" cy="7" r="4" />
+      <line x1="20" y1="8" x2="20" y2="14" />
+      <line x1="23" y1="11" x2="17" y2="11" />
+    </svg>
+  ),
+  AlertOctagon: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  ),
+  Ban: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+    </svg>
+  ),
   Trash: () => (
     <svg
       viewBox="0 0 24 24"
@@ -334,7 +390,7 @@ const Ico = {
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   HELPERS & CONSTANTS
+   CONSTANTS
 ═══════════════════════════════════════════════════════════════ */
 const API = "http://127.0.0.1:8000/api";
 const authHeaders = () => ({
@@ -385,8 +441,9 @@ const ROLES_FOR = {
   ],
 };
 
-/* ── Action display config ── */
+/* ══ Action META — كل العمليات الممكنة ══ */
 const ACTION_META = {
+  /* ── File actions ── */
   upload_file: {
     label: "Upload",
     color: "#6366f1",
@@ -400,7 +457,7 @@ const ACTION_META = {
     icon: <Ico.Download />,
   },
   delete_file: {
-    label: "Delete",
+    label: "Delete File",
     color: "#dc2626",
     bg: "rgba(220,38,38,.08)",
     icon: <Ico.Trash />,
@@ -417,11 +474,61 @@ const ACTION_META = {
     bg: "rgba(107,114,128,.08)",
     icon: <Ico.XCircle />,
   },
+  /* ── Auth actions ── */
   login: {
     label: "Login",
     color: "#0ea5e9",
     bg: "rgba(14,165,233,.08)",
-    icon: <Ico.Eye />,
+    icon: <Ico.LogIn />,
+  },
+  logout: {
+    label: "Logout",
+    color: "#8b5cf6",
+    bg: "rgba(139,92,246,.08)",
+    icon: <Ico.LogOut />,
+  },
+  register: {
+    label: "Register",
+    color: "#10b981",
+    bg: "rgba(16,185,129,.08)",
+    icon: <Ico.UserPlus />,
+  },
+  login_failed: {
+    label: "Login Failed",
+    color: "#ef4444",
+    bg: "rgba(239,68,68,.08)",
+    icon: <Ico.AlertOctagon />,
+  },
+  login_blocked: {
+    label: "Blocked",
+    color: "#b45309",
+    bg: "rgba(180,83,9,.08)",
+    icon: <Ico.Ban />,
+  },
+  /* ── fallback ── */
+  LOGIN: {
+    label: "Login",
+    color: "#0ea5e9",
+    bg: "rgba(14,165,233,.08)",
+    icon: <Ico.LogIn />,
+  },
+  LOGOUT: {
+    label: "Logout",
+    color: "#8b5cf6",
+    bg: "rgba(139,92,246,.08)",
+    icon: <Ico.LogOut />,
+  },
+  REGISTER: {
+    label: "Register",
+    color: "#10b981",
+    bg: "rgba(16,185,129,.08)",
+    icon: <Ico.UserPlus />,
+  },
+  LOGIN_FAILED: {
+    label: "Login Failed",
+    color: "#ef4444",
+    bg: "rgba(239,68,68,.08)",
+    icon: <Ico.AlertOctagon />,
   },
 };
 
@@ -432,6 +539,23 @@ const getActionMeta = (action) =>
     bg: "rgba(107,114,128,.08)",
     icon: <Ico.FileText />,
   };
+
+/* ── فلاتر الـ Logs ── */
+const ACTION_FILTERS = [
+  { key: "all", label: "All" },
+  /* Auth */
+  { key: "login", label: "Login" },
+  { key: "logout", label: "Logout" },
+  { key: "register", label: "Register" },
+  { key: "login_failed", label: "Failed Login" },
+  { key: "login_blocked", label: "Blocked" },
+  /* Files */
+  { key: "upload_file", label: "Upload" },
+  { key: "download_file", label: "Download" },
+  { key: "delete_file", label: "Delete" },
+  { key: "share_file", label: "Share" },
+  { key: "revoke_share", label: "Revoke" },
+];
 
 /* ═══════════════════════════════════════════════════════════════
    TOAST
@@ -452,7 +576,7 @@ function Toast({ toast, onDone }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DELETE CONFIRM MODAL
+   DELETE MODAL
 ═══════════════════════════════════════════════════════════════ */
 function DeleteModal({ user, onCancel, onConfirm, loading }) {
   if (!user) return null;
@@ -645,7 +769,6 @@ function OverviewTab({ users }) {
           </div>
         ))}
       </div>
-
       <div className="ad-table-section">
         <div className="ad-table-header">
           <div>
@@ -941,7 +1064,7 @@ function UsersTab({ users, viewerRole, onDelete, onUpdate }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   AUDIT LOGS TAB  ← الجديد
+   AUDIT LOGS TAB
 ═══════════════════════════════════════════════════════════════ */
 function LogsTab() {
   const [logs, setLogs] = useState([]);
@@ -978,33 +1101,21 @@ function LogsTab() {
   };
 
   useEffect(() => {
-    fetchLogs(1, actionFilter, search);
+    fetchLogs(1, "all", "");
   }, []);
 
   const handleSearch = (e) => {
     setSearch(e.target.value);
     fetchLogs(1, actionFilter, e.target.value);
   };
-
   const handleActionFilter = (act) => {
     setActionFilter(act);
     fetchLogs(1, act, search);
   };
-
   const handlePage = (p) => fetchLogs(p, actionFilter, search);
-
-  const ACTION_FILTERS = [
-    { key: "all", label: "All" },
-    { key: "upload_file", label: "Upload" },
-    { key: "download_file", label: "Download" },
-    { key: "delete_file", label: "Delete" },
-    { key: "share_file", label: "Share" },
-    { key: "revoke_share", label: "Revoke" },
-  ];
 
   return (
     <div className="ad-table-section">
-      {/* ── Header ── */}
       <div className="ad-table-header">
         <div>
           <div className="ad-table-title">Audit Logs</div>
@@ -1026,8 +1137,7 @@ function LogsTab() {
         </button>
       </div>
 
-      {/* ── Toolbar ── */}
-      <div className="ad-table-toolbar">
+      <div className="ad-table-toolbar" style={{ flexWrap: "wrap", gap: 8 }}>
         <div className="ad-search-wrap">
           <span className="ad-search-icon">
             <Ico.Search />
@@ -1039,7 +1149,7 @@ function LogsTab() {
             onChange={handleSearch}
           />
         </div>
-        <div className="ad-filter-pills">
+        <div className="ad-filter-pills" style={{ flexWrap: "wrap" }}>
           {ACTION_FILTERS.map((f) => (
             <button
               key={f.key}
@@ -1052,7 +1162,6 @@ function LogsTab() {
         </div>
       </div>
 
-      {/* ── Table ── */}
       <div className="ad-table-wrap">
         {loading ? (
           <div className="ad-loading" style={{ padding: "48px" }}>
@@ -1114,7 +1223,7 @@ function LogsTab() {
                         </div>
                       ) : (
                         <span style={{ color: "#9ca3af", fontSize: 13 }}>
-                          Deleted user
+                          Unknown / Deleted
                         </span>
                       )}
                     </td>
@@ -1182,7 +1291,6 @@ function LogsTab() {
         )}
       </div>
 
-      {/* ── Pagination ── */}
       {totalPages > 1 && !loading && (
         <div className="ad-pagination">
           <span className="ad-page-info">
@@ -1354,7 +1462,6 @@ export default function AdminPanel({ onLogout }) {
 
   return (
     <div className="ad-wrap">
-      {/* ── SIDEBAR ── */}
       <aside className="ad-sidebar">
         <div className="ad-logo">
           <div className="ad-logo-icon">
@@ -1396,7 +1503,6 @@ export default function AdminPanel({ onLogout }) {
         </div>
       </aside>
 
-      {/* ── MAIN ── */}
       <main className="ad-main">
         <header className="ad-header">
           <div className="ad-header-left">

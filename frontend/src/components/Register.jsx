@@ -219,7 +219,10 @@ export default function Register({ onSwitch }) {
     try {
       const res = await fetch("http://localhost:8000/api/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
         body: JSON.stringify({
           name: form.name,
           email: form.email,

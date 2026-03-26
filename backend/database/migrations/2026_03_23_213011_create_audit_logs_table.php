@@ -11,13 +11,14 @@ return new class extends Migration
         Schema::create('audit_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->enum('action', [
-                'upload_file',
-                'download_file',
-                'share_file',
-                'delete_file',
-                'login',
-            ]);
+            // $table->enum('action', [
+            //     'upload_file',
+            //     'download_file',
+            //     'share_file',
+            //     'delete_file',
+            //     'login',
+            // ]);
+            $table->string('action');
             $table->foreignId('file_id')->nullable()->constrained()->onDelete('set null');
             $table->string('ip_address', 45)->nullable();
             $table->text('details')->nullable();       // تفاصيل إضافية اختيارية
