@@ -69,6 +69,8 @@ php artisan key:generate
 
 ### 5️⃣ Run Database Migrations
 
+php artisan migrate:fresh
+
 ```bash
 php artisan migrate
 ```

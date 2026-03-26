@@ -1337,6 +1337,38 @@ function LogsTab() {
   );
 }
 
+function LogoutDialog({ onCancel, onConfirm, loading }) {
+  return (
+    <div className="ad-modal-overlay" onClick={onCancel}>
+      <div className="ad-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="ad-modal-icon">
+          <Ico.LogOut />
+        </div>
+        <h2 className="ad-modal-title">Confirm Logout</h2>
+        <p className="ad-modal-desc">
+          Are you sure you want to leave the admin panel?
+        </p>
+        <div className="ad-modal-actions">
+          <button
+            className="ad-modal-cancel"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            Stay
+          </button>
+          <button
+            className="ad-modal-confirm"
+            onClick={onConfirm}
+            disabled={loading}
+          >
+            {loading ? <span className="ad-spinner" /> : "Yes, Logout"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════
    MAIN ADMIN PANEL
 ═══════════════════════════════════════════════════════════════ */
@@ -1348,6 +1380,7 @@ export default function AdminPanel({ onLogout }) {
   const [viewerRole, setViewerRole] = useState(
     localStorage.getItem("role") ?? "admin",
   );
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [toDelete, setToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [toUpdate, setToUpdate] = useState(null);
@@ -1514,7 +1547,7 @@ export default function AdminPanel({ onLogout }) {
           </div>
           <button
             className="ad-logout-btn"
-            onClick={handleLogout}
+            onClick={() => setShowLogoutDialog(true)}
             disabled={loggingOut}
           >
             {loggingOut ? (
@@ -1568,6 +1601,16 @@ export default function AdminPanel({ onLogout }) {
         loading={updating}
       />
       <Toast toast={toast} onDone={() => setToast(null)} />
+      {showLogoutDialog && (
+        <LogoutDialog
+          onCancel={() => setShowLogoutDialog(false)}
+          onConfirm={() => {
+            setShowLogoutDialog(false);
+            handleLogout();
+          }}
+          loading={loggingOut}
+        />
+      )}
     </div>
   );
 }

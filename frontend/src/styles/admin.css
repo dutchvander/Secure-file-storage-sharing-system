@@ -1344,3 +1344,11 @@ table.ad-table {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Logout modal icon variant */
+.ad-modal-icon--logout {
+  background: rgba(239, 68, 68, 0.08);
+}
+.ad-modal-icon--logout svg {
+  stroke: #dc2626;
+}
