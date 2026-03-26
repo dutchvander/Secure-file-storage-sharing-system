@@ -19,9 +19,11 @@ const PrivateRoute = ({ children }) => {
 
 const AdminRoute = ({ children }) => {
   if (!hasToken()) return <Navigate to="/login" replace />;
-  return isAdminRole(getSavedRole())
-    ? children
-    : <Navigate to="/dashboard" replace />;
+  return isAdminRole(getSavedRole()) ? (
+    children
+  ) : (
+    <Navigate to="/dashboard" replace />
+  );
 };
 
 function App() {
@@ -77,7 +79,12 @@ function App() {
     <Routes>
       <Route
         path="/login"
-        element={<Login onSwitch={() => navigate("/register")} onSuccess={handleLoginSuccess} />}
+        element={
+          <Login
+            onSwitch={() => navigate("/register")}
+            onSuccess={handleLoginSuccess}
+          />
+        }
       />
       <Route
         path="/register"
@@ -106,9 +113,13 @@ function App() {
       <Route
         path="/"
         element={
-          hasToken()
-            ? <Navigate to={isAdminRole(getSavedRole()) ? "/admin" : "/dashboard"} />
-            : <Navigate to="/login" />
+          hasToken() ? (
+            <Navigate
+              to={isAdminRole(getSavedRole()) ? "/admin" : "/dashboard"}
+            />
+          ) : (
+            <Navigate to="/login" />
+          )
         }
       />
     </Routes>

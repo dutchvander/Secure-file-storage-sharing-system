@@ -22,17 +22,23 @@ Route::middleware('auth:sanctum')->group(function () {
 
     /* ─── Files ─── */
     Route::prefix('files')->group(function () {
-        Route::get('/',                   [FileController::class, 'index']);
-        Route::post('/upload',            [FileController::class, 'upload']);
-        Route::get('/shared-with-me',     [FileController::class, 'sharedWithMe']);
-        Route::get('/shared-by-me',       [FileController::class, 'sharedByMe']);
-        Route::post('/share',             [FileController::class, 'share']);
+        /* static routes أولاً — قبل أي dynamic {id} */
+        Route::get('/',               [FileController::class, 'index']);
+        Route::post('/upload',        [FileController::class, 'upload']);
+        Route::get('/shared-with-me', [FileController::class, 'sharedWithMe']);
+        Route::get('/shared-by-me',   [FileController::class, 'sharedByMe']);
+        Route::post('/share',         [FileController::class, 'share']);
+
+        /* share/{shareId} قبل /{id} */
         Route::delete('/share/{shareId}', [FileController::class, 'revokeShare']);
-        Route::get('/{id}/download',      [FileController::class, 'download']);
-        Route::delete('/{id}',            [FileController::class, 'destroy']);
+
+        /* dynamic routes في الآخر */
+        Route::get('/{id}/view',     [FileController::class, 'view']);      // ← مضاف
+        Route::get('/{id}/download', [FileController::class, 'download']);
+        Route::delete('/{id}',       [FileController::class, 'destroy']);
     });
 
-    /* ─── Users list (للمشاركة) ─── */
+    /* ─── Users list ─── */
     Route::get('/users/list', [FileController::class, 'usersList']);
 
 });

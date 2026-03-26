@@ -10,14 +10,14 @@ return new class extends Migration
     {
         Schema::create('file_shares', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('file_id')->constrained()->onDelete('cascade');
-            $table->foreignId('shared_by')->constrained('users')->onDelete('cascade');
-            $table->foreignId('shared_with')->constrained('users')->onDelete('cascade');
-            $table->enum('permission', ['read', 'download'])->default('read');
-            $table->timestamps();
 
-            // منع مشاركة نفس الملف مع نفس الشخص مرتين
-            $table->unique(['file_id', 'shared_with']);
+            $table->foreignId('file_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('shared_by')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('shared_with')->constrained('users')->cascadeOnDelete();
+
+            $table->enum('permission', ['view', 'download'])->default('view');
+
+            $table->timestamps();
         });
     }
 

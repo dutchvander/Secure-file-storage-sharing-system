@@ -30,6 +30,19 @@ const Ico = {
       <line x1="12" y1="15" x2="12" y2="3" />
     </svg>
   ),
+  Eye: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  ),
   Share: () => (
     <svg
       viewBox="0 0 24 24"
@@ -163,7 +176,6 @@ const headers = () => ({
   Accept: "application/json",
 });
 
-/* ── mime → emoji icon ── */
 const fileIcon = (mime = "") => {
   if (mime.startsWith("image/")) return "🖼️";
   if (mime === "application/pdf") return "📄";
@@ -174,6 +186,12 @@ const fileIcon = (mime = "") => {
   if (mime.includes("zip")) return "🗜️";
   return "📁";
 };
+
+/* ── أنواع الملفات التي يمكن معاينتها ── */
+const isPreviewable = (mime = "") =>
+  mime.startsWith("image/") ||
+  mime === "application/pdf" ||
+  mime.startsWith("text/");
 
 /* ══════════════════════════════════════════════════════════════
    TOAST
@@ -195,7 +213,125 @@ function Toast({ toast, onDone }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   SHARE MODAL
+   PREVIEW MODAL
+   يجلب الملف من API ويعرضه inline بدون تحميل
+══════════════════════════════════════════════════════════════ */
+function PreviewModal({ file, onClose }) {
+  const [blobUrl, setBlobUrl] = useState(null);
+  const [textData, setTextData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let url = null;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API}/files/${file.id}/view`, {
+          headers: headers(),
+        });
+        if (!res.ok) {
+          const d = await res.json();
+          setError(d.message || "Cannot load preview.");
+          return;
+        }
+
+        const blob = await res.blob();
+
+        /* نص عادي → نقرأه كـ string */
+        if (file.mime_type.startsWith("text/")) {
+          const text = await blob.text();
+          setTextData(text);
+        } else {
+          url = URL.createObjectURL(blob);
+          setBlobUrl(url);
+        }
+      } catch {
+        setError("Failed to load file preview.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [file.id, file.mime_type]);
+
+  const isImg = file.mime_type.startsWith("image/");
+  const isPdf = file.mime_type === "application/pdf";
+  const isTxt = file.mime_type.startsWith("text/");
+
+  return (
+    <div className="fm-modal-overlay fm-preview-overlay" onClick={onClose}>
+      <div className="fm-preview-modal" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="fm-preview-header">
+          <div className="fm-preview-title">
+            <span>{fileIcon(file.mime_type)}</span>
+            <span>{file.original_name}</span>
+            <span className="fm-preview-size">{file.formatted_size}</span>
+          </div>
+          <button className="fm-modal-close" onClick={onClose}>
+            <Ico.X />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="fm-preview-body">
+          {loading && (
+            <div className="fm-preview-loading">
+              <span className="fm-spinner dark" />
+              <p>Decrypting and loading preview…</p>
+            </div>
+          )}
+
+          {error && !loading && (
+            <div className="fm-preview-error">
+              <Ico.Alert />
+              <p>{error}</p>
+            </div>
+          )}
+
+          {!loading && !error && isImg && blobUrl && (
+            <div className="fm-preview-img-wrap">
+              <img
+                src={blobUrl}
+                alt={file.original_name}
+                className="fm-preview-img"
+              />
+            </div>
+          )}
+
+          {!loading && !error && isPdf && blobUrl && (
+            <iframe
+              src={blobUrl}
+              title={file.original_name}
+              className="fm-preview-iframe"
+            />
+          )}
+
+          {!loading && !error && isTxt && textData !== null && (
+            <pre className="fm-preview-text">{textData}</pre>
+          )}
+
+          {!loading && !error && !isImg && !isPdf && !isTxt && (
+            <div className="fm-preview-unsupported">
+              <span style={{ fontSize: 48 }}>{fileIcon(file.mime_type)}</span>
+              <p>Preview not available for this file type.</p>
+              <p className="fm-preview-unsupported-sub">
+                Use the Download button to access this file.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SHARE MODAL  — permission: view | download
 ══════════════════════════════════════════════════════════════ */
 function ShareModal({ file, onClose, onShared }) {
   const [users, setUsers] = useState([]);
@@ -275,8 +411,16 @@ function ShareModal({ file, onClose, onShared }) {
         </label>
         <div className="fm-permission-row">
           {[
-            { val: "read", label: "Read only", desc: "Can view file info" },
-            { val: "download", label: "Download", desc: "Can download file" },
+            {
+              val: "view",
+              label: "View Only",
+              desc: "Can preview inside the app — cannot download",
+            },
+            {
+              val: "download",
+              label: "Download",
+              desc: "Can preview and download the file",
+            },
           ].map((p) => (
             <button
               key={p.val}
@@ -316,7 +460,7 @@ function ShareModal({ file, onClose, onShared }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   DELETE CONFIRM MODAL
+   DELETE MODAL
 ══════════════════════════════════════════════════════════════ */
 function DeleteModal({ file, onClose, onDeleted }) {
   const [deleting, setDeleting] = useState(false);
@@ -382,9 +526,16 @@ function DeleteModal({ file, onClose, onDeleted }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   FILE ROW
+   FILE ROW  (ملفات المستخدم — يملك كامل الصلاحيات)
 ══════════════════════════════════════════════════════════════ */
-function FileRow({ file, onShare, onDelete, downloading, onDownload }) {
+function FileRow({
+  file,
+  onShare,
+  onDelete,
+  onPreview,
+  downloading,
+  onDownload,
+}) {
   const date = file.created_at
     ? new Date(file.created_at).toLocaleDateString("en-GB", {
         day: "numeric",
@@ -411,6 +562,18 @@ function FileRow({ file, onShare, onDelete, downloading, onDownload }) {
         </span>
       </td>
       <td className="fm-td fm-td--actions">
+        {/* View — دائماً متاح للمالك */}
+        {isPreviewable(file.mime_type) && (
+          <button
+            className="fm-action-btn view"
+            onClick={() => onPreview(file)}
+            title="Preview"
+          >
+            <Ico.Eye />
+            <span>View</span>
+          </button>
+        )}
+        {/* Download — دائماً متاح للمالك */}
         <button
           className="fm-action-btn download"
           onClick={() => onDownload(file)}
@@ -424,7 +587,7 @@ function FileRow({ file, onShare, onDelete, downloading, onDownload }) {
           )}
           <span>Download</span>
         </button>
-        {/* Share — مرئي فقط لـ student و professor */}
+        {/* Share */}
         {onShare && (
           <button
             className="fm-action-btn share"
@@ -435,6 +598,7 @@ function FileRow({ file, onShare, onDelete, downloading, onDownload }) {
             <span>Share</span>
           </button>
         )}
+        {/* Delete */}
         <button
           className="fm-action-btn delete"
           onClick={() => onDelete(file)}
@@ -449,9 +613,18 @@ function FileRow({ file, onShare, onDelete, downloading, onDownload }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   SHARED ROW (shared with me / by me)
+   SHARED ROW
+   permission = view  → زر View فقط
+   permission = download → زر View + Download
 ══════════════════════════════════════════════════════════════ */
-function SharedRow({ item, type, downloading, onDownload, onRevoke }) {
+function SharedRow({
+  item,
+  type,
+  downloading,
+  onDownload,
+  onRevoke,
+  onPreview,
+}) {
   const file = item.file;
   const date = item.shared_at
     ? new Date(item.shared_at).toLocaleDateString("en-GB", {
@@ -460,6 +633,13 @@ function SharedRow({ item, type, downloading, onDownload, onRevoke }) {
         year: "numeric",
       })
     : "—";
+
+  const perm = item.permission ?? "";
+
+  const canView =
+    type === "with-me" && ["view", "read", "download"].includes(perm);
+
+  const canDownload = type === "with-me" && perm === "download";
 
   return (
     <tr className="fm-tr">
@@ -477,12 +657,24 @@ function SharedRow({ item, type, downloading, onDownload, onRevoke }) {
       </td>
       <td className="fm-td">
         <span className={`fm-perm-badge ${item.permission}`}>
-          {item.permission}
+          {item.permission === "view" ? "View Only" : "Download"}
         </span>
       </td>
       <td className="fm-td fm-td--muted">{date}</td>
       <td className="fm-td fm-td--actions">
-        {type === "with-me" && item.permission === "download" && (
+        {/* View — متاح لـ view و download */}
+        {canView && file && isPreviewable(file.mime_type) && (
+          <button
+            className="fm-action-btn view"
+            onClick={() => onPreview(file)}
+            title="Preview"
+          >
+            <Ico.Eye />
+            <span>View</span>
+          </button>
+        )}
+        {/* Download — متاح فقط لـ download */}
+        {canDownload && file && (
           <button
             className="fm-action-btn download"
             onClick={() => onDownload(file)}
@@ -497,6 +689,7 @@ function SharedRow({ item, type, downloading, onDownload, onRevoke }) {
             <span>Download</span>
           </button>
         )}
+        {/* Revoke — لصاحب الملف في "Files I Shared" */}
         {type === "by-me" && (
           <button
             className="fm-action-btn delete"
@@ -516,12 +709,11 @@ function SharedRow({ item, type, downloading, onDownload, onRevoke }) {
    MAIN COMPONENT
 ══════════════════════════════════════════════════════════════ */
 export default function FileManager() {
-  /* القيود حسب الدور — admin و super_admin لا يرفعون ولا يشاركون */
   const role = localStorage.getItem("role") ?? "student";
   const canUpload = role === "student" || role === "professor";
   const canShare = role === "student" || role === "professor";
 
-  const [tab, setTab] = useState("my"); // "my" | "with-me" | "by-me"
+  const [tab, setTab] = useState("my");
   const [myFiles, setMyFiles] = useState([]);
   const [sharedWith, setSharedWith] = useState([]);
   const [sharedBy, setSharedBy] = useState([]);
@@ -531,11 +723,12 @@ export default function FileManager() {
   const [downloading, setDownloading] = useState(null);
   const [shareFile, setShareFile] = useState(null);
   const [deleteFile, setDeleteFile] = useState(null);
+  const [previewFile, setPreviewFile] = useState(null); // ← جديد
   const [toast, setToast] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef();
 
-  /* ── Fetch all ── */
+  /* ── Fetch ── */
   const fetchAll = async () => {
     setLoading(true);
     try {
@@ -563,14 +756,11 @@ export default function FileManager() {
     fetchAll();
   }, []);
 
-  /* ── Toast helper ── */
   const showToast = (type, msg) => setToast({ type, msg });
 
   /* ── Upload ── */
   const handleUpload = async (file) => {
     if (!file) return;
-
-    /* Client-side size check 10MB */
     if (file.size > 10 * 1024 * 1024) {
       showToast("error", "File exceeds 10 MB limit.");
       return;
@@ -578,22 +768,18 @@ export default function FileManager() {
 
     setUploading(true);
     setUploadPct(0);
-
     const formData = new FormData();
     formData.append("file", file);
 
-    /* XMLHttpRequest لعرض progress bar */
     await new Promise((resolve) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${API}/files/upload`);
       xhr.setRequestHeader("Authorization", `Bearer ${token()}`);
       xhr.setRequestHeader("Accept", "application/json");
-
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable)
           setUploadPct(Math.round((e.loaded / e.total) * 100));
       };
-
       xhr.onload = () => {
         if (xhr.status === 201) {
           const data = JSON.parse(xhr.responseText);
@@ -646,13 +832,11 @@ export default function FileManager() {
     }
   };
 
-  /* ── Delete ── */
   const handleDeleted = (id, msg) => {
     setMyFiles((prev) => prev.filter((f) => f.id !== id));
     showToast("success", msg);
   };
 
-  /* ── Revoke share ── */
   const handleRevoke = async (shareId) => {
     try {
       const res = await fetch(`${API}/files/share/${shareId}`, {
@@ -667,7 +851,6 @@ export default function FileManager() {
     }
   };
 
-  /* ── Drag & Drop ── */
   const onDrop = (e) => {
     e.preventDefault();
     setDragOver(false);
@@ -675,7 +858,6 @@ export default function FileManager() {
     if (file) handleUpload(file);
   };
 
-  /* ════════════════════ RENDER ════════════════════ */
   const TABS = [
     { key: "my", label: "My Files", count: myFiles.length },
     { key: "with-me", label: "Shared With Me", count: sharedWith.length },
@@ -684,7 +866,7 @@ export default function FileManager() {
 
   return (
     <div className="fm-wrap">
-      {/* ── Upload zone — فقط student و professor ── */}
+      {/* Upload zone */}
       {canUpload && (
         <div
           className={`fm-upload-zone${dragOver ? " drag" : ""}`}
@@ -730,7 +912,6 @@ export default function FileManager() {
         </div>
       )}
 
-      {/* ── Progress bar ── */}
       {canUpload && uploading && (
         <div className="fm-progress-wrap">
           <div className="fm-progress-bar" style={{ width: `${uploadPct}%` }} />
@@ -738,7 +919,7 @@ export default function FileManager() {
         </div>
       )}
 
-      {/* ── Tabs ── */}
+      {/* Tabs */}
       <div className="fm-tabs">
         {TABS.map((t) => (
           <button
@@ -752,7 +933,7 @@ export default function FileManager() {
         ))}
       </div>
 
-      {/* ── Table ── */}
+      {/* Table */}
       <div className="fm-table-card">
         {loading ? (
           <div className="fm-loading">
@@ -785,6 +966,7 @@ export default function FileManager() {
                         file={f}
                         downloading={downloading}
                         onDownload={handleDownload}
+                        onPreview={setPreviewFile}
                         onShare={canShare ? setShareFile : null}
                         onDelete={setDeleteFile}
                       />
@@ -819,6 +1001,7 @@ export default function FileManager() {
                         type="with-me"
                         downloading={downloading}
                         onDownload={handleDownload}
+                        onPreview={setPreviewFile}
                       />
                     ))}
                   </tbody>
@@ -851,6 +1034,7 @@ export default function FileManager() {
                         type="by-me"
                         downloading={downloading}
                         onDownload={handleDownload}
+                        onPreview={setPreviewFile}
                         onRevoke={handleRevoke}
                       />
                     ))}
@@ -861,7 +1045,10 @@ export default function FileManager() {
         )}
       </div>
 
-      {/* ── Modals ── */}
+      {/* Modals */}
+      {previewFile && (
+        <PreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
+      )}
       {shareFile && (
         <ShareModal
           file={shareFile}
@@ -877,7 +1064,6 @@ export default function FileManager() {
         />
       )}
 
-      {/* ── Toast ── */}
       <Toast toast={toast} onDone={() => setToast(null)} />
     </div>
   );
