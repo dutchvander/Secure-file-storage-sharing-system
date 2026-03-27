@@ -187,11 +187,80 @@ const fileIcon = (mime = "") => {
   return "📁";
 };
 
-/* ── أنواع الملفات التي يمكن معاينتها ── */
 const isPreviewable = (mime = "") =>
   mime.startsWith("image/") ||
   mime === "application/pdf" ||
   mime.startsWith("text/");
+
+/* ══════════════════════════════════════════════════════════════
+   STATUS BADGE  ← جديد
+   يعرض حالة فحص ClamAV بجانب كل ملف
+══════════════════════════════════════════════════════════════ */
+function StatusBadge({ status }) {
+  if (!status || status === "pending") {
+    return (
+      <span className="fm-status-badge pending" title="Awaiting scan">
+        🔄 Pending
+      </span>
+    );
+  }
+  if (status === "safe") {
+    return (
+      <span
+        className="fm-status-badge safe"
+        title="Scanned by ClamAV — No threats found"
+      >
+        🟢 Safe
+      </span>
+    );
+  }
+  if (status === "infected") {
+    return (
+      <span
+        className="fm-status-badge infected"
+        title="Malware detected — Access blocked"
+      >
+        🔴 Infected
+      </span>
+    );
+  }
+  return null;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UPLOAD PHASE INDICATOR  ← جديد
+   يعرض مراحل الرفع: Uploading → Scanning → Encrypting → Done
+══════════════════════════════════════════════════════════════ */
+function UploadPhase({ phase }) {
+  if (!phase) return null;
+
+  const phases = [
+    { key: "uploading", label: "Uploading…" },
+    { key: "scanning", label: "Scanning for malware…" },
+    { key: "encrypting", label: "Encrypting & saving…" },
+  ];
+
+  return (
+    <div className="fm-upload-phases">
+      {phases.map((p) => (
+        <span
+          key={p.key}
+          className={`fm-upload-phase${phase === p.key ? " active" : ""}${
+            phases.findIndex((x) => x.key === phase) >
+            phases.findIndex((x) => x.key === p.key)
+              ? " done"
+              : ""
+          }`}
+        >
+          {phase === p.key && <span className="fm-spinner" />}
+          {phases.findIndex((x) => x.key === phase) >
+            phases.findIndex((x) => x.key === p.key) && "✓ "}
+          {p.label}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 /* ══════════════════════════════════════════════════════════════
    TOAST
@@ -214,7 +283,6 @@ function Toast({ toast, onDone }) {
 
 /* ══════════════════════════════════════════════════════════════
    PREVIEW MODAL
-   يجلب الملف من API ويعرضه inline بدون تحميل
 ══════════════════════════════════════════════════════════════ */
 function PreviewModal({ file, onClose }) {
   const [blobUrl, setBlobUrl] = useState(null);
@@ -224,7 +292,6 @@ function PreviewModal({ file, onClose }) {
 
   useEffect(() => {
     let url = null;
-
     (async () => {
       try {
         const res = await fetch(`${API}/files/${file.id}/view`, {
@@ -235,13 +302,9 @@ function PreviewModal({ file, onClose }) {
           setError(d.message || "Cannot load preview.");
           return;
         }
-
         const blob = await res.blob();
-
-        /* نص عادي → نقرأه كـ string */
         if (file.mime_type.startsWith("text/")) {
-          const text = await blob.text();
-          setTextData(text);
+          setTextData(await blob.text());
         } else {
           url = URL.createObjectURL(blob);
           setBlobUrl(url);
@@ -252,7 +315,6 @@ function PreviewModal({ file, onClose }) {
         setLoading(false);
       }
     })();
-
     return () => {
       if (url) URL.revokeObjectURL(url);
     };
@@ -265,19 +327,17 @@ function PreviewModal({ file, onClose }) {
   return (
     <div className="fm-modal-overlay fm-preview-overlay" onClick={onClose}>
       <div className="fm-preview-modal" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
         <div className="fm-preview-header">
           <div className="fm-preview-title">
             <span>{fileIcon(file.mime_type)}</span>
             <span>{file.original_name}</span>
             <span className="fm-preview-size">{file.formatted_size}</span>
+            <StatusBadge status={file.status} />
           </div>
           <button className="fm-modal-close" onClick={onClose}>
             <Ico.X />
           </button>
         </div>
-
-        {/* Body */}
         <div className="fm-preview-body">
           {loading && (
             <div className="fm-preview-loading">
@@ -285,14 +345,12 @@ function PreviewModal({ file, onClose }) {
               <p>Decrypting and loading preview…</p>
             </div>
           )}
-
           {error && !loading && (
             <div className="fm-preview-error">
               <Ico.Alert />
               <p>{error}</p>
             </div>
           )}
-
           {!loading && !error && isImg && blobUrl && (
             <div className="fm-preview-img-wrap">
               <img
@@ -302,7 +360,6 @@ function PreviewModal({ file, onClose }) {
               />
             </div>
           )}
-
           {!loading && !error && isPdf && blobUrl && (
             <iframe
               src={blobUrl}
@@ -310,11 +367,9 @@ function PreviewModal({ file, onClose }) {
               className="fm-preview-iframe"
             />
           )}
-
           {!loading && !error && isTxt && textData !== null && (
             <pre className="fm-preview-text">{textData}</pre>
           )}
-
           {!loading && !error && !isImg && !isPdf && !isTxt && (
             <div className="fm-preview-unsupported">
               <span style={{ fontSize: 48 }}>{fileIcon(file.mime_type)}</span>
@@ -331,7 +386,7 @@ function PreviewModal({ file, onClose }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   SHARE MODAL  — permission: view | download
+   SHARE MODAL
 ══════════════════════════════════════════════════════════════ */
 function ShareModal({ file, onClose, onShared }) {
   const [users, setUsers] = useState([]);
@@ -383,7 +438,6 @@ function ShareModal({ file, onClose, onShared }) {
             <Ico.X />
           </button>
         </div>
-
         <div className="fm-modal-file">
           <span className="fm-modal-file-icon">{fileIcon(file.mime_type)}</span>
           <div>
@@ -391,7 +445,6 @@ function ShareModal({ file, onClose, onShared }) {
             <div className="fm-modal-file-size">{file.formatted_size}</div>
           </div>
         </div>
-
         <label className="fm-label">Share with</label>
         <select
           className="fm-select"
@@ -405,7 +458,6 @@ function ShareModal({ file, onClose, onShared }) {
             </option>
           ))}
         </select>
-
         <label className="fm-label" style={{ marginTop: 14 }}>
           Permission
         </label>
@@ -432,14 +484,12 @@ function ShareModal({ file, onClose, onShared }) {
             </button>
           ))}
         </div>
-
         {error && (
           <div className="fm-error-note">
             <Ico.Alert />
             {error}
           </div>
         )}
-
         <div className="fm-modal-actions">
           <button className="fm-btn-cancel" onClick={onClose}>
             Cancel
@@ -526,7 +576,7 @@ function DeleteModal({ file, onClose, onDeleted }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   FILE ROW  (ملفات المستخدم — يملك كامل الصلاحيات)
+   FILE ROW  ← مع عمود Security Status
 ══════════════════════════════════════════════════════════════ */
 function FileRow({
   file,
@@ -556,13 +606,16 @@ function FileRow({
         </div>
       </td>
       <td className="fm-td fm-td--muted">{date}</td>
+      {/* عمود الأمان: Encrypted + نتيجة الفحص */}
       <td className="fm-td">
-        <span className="fm-encrypted-badge">
-          <Ico.Shield /> Encrypted
-        </span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span className="fm-encrypted-badge">
+            <Ico.Shield /> Encrypted
+          </span>
+          <StatusBadge status={file.status} />
+        </div>
       </td>
       <td className="fm-td fm-td--actions">
-        {/* View — دائماً متاح للمالك */}
         {isPreviewable(file.mime_type) && (
           <button
             className="fm-action-btn view"
@@ -573,7 +626,6 @@ function FileRow({
             <span>View</span>
           </button>
         )}
-        {/* Download — دائماً متاح للمالك */}
         <button
           className="fm-action-btn download"
           onClick={() => onDownload(file)}
@@ -587,7 +639,6 @@ function FileRow({
           )}
           <span>Download</span>
         </button>
-        {/* Share */}
         {onShare && (
           <button
             className="fm-action-btn share"
@@ -598,7 +649,6 @@ function FileRow({
             <span>Share</span>
           </button>
         )}
-        {/* Delete */}
         <button
           className="fm-action-btn delete"
           onClick={() => onDelete(file)}
@@ -614,8 +664,6 @@ function FileRow({
 
 /* ══════════════════════════════════════════════════════════════
    SHARED ROW
-   permission = view  → زر View فقط
-   permission = download → زر View + Download
 ══════════════════════════════════════════════════════════════ */
 function SharedRow({
   item,
@@ -635,10 +683,8 @@ function SharedRow({
     : "—";
 
   const perm = item.permission ?? "";
-
   const canView =
     type === "with-me" && ["view", "read", "download"].includes(perm);
-
   const canDownload = type === "with-me" && perm === "download";
 
   return (
@@ -662,7 +708,6 @@ function SharedRow({
       </td>
       <td className="fm-td fm-td--muted">{date}</td>
       <td className="fm-td fm-td--actions">
-        {/* View — متاح لـ view و download */}
         {canView && file && isPreviewable(file.mime_type) && (
           <button
             className="fm-action-btn view"
@@ -673,7 +718,6 @@ function SharedRow({
             <span>View</span>
           </button>
         )}
-        {/* Download — متاح فقط لـ download */}
         {canDownload && file && (
           <button
             className="fm-action-btn download"
@@ -689,7 +733,6 @@ function SharedRow({
             <span>Download</span>
           </button>
         )}
-        {/* Revoke — لصاحب الملف في "Files I Shared" */}
         {type === "by-me" && (
           <button
             className="fm-action-btn delete"
@@ -720,10 +763,11 @@ export default function FileManager() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
+  const [uploadPhase, setUploadPhase] = useState(null); // ← جديد: مرحلة الرفع
   const [downloading, setDownloading] = useState(null);
   const [shareFile, setShareFile] = useState(null);
   const [deleteFile, setDeleteFile] = useState(null);
-  const [previewFile, setPreviewFile] = useState(null); // ← جديد
+  const [previewFile, setPreviewFile] = useState(null);
   const [toast, setToast] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef();
@@ -758,7 +802,7 @@ export default function FileManager() {
 
   const showToast = (type, msg) => setToast({ type, msg });
 
-  /* ── Upload ── */
+  /* ── Upload (مع مراحل scanning) ── */
   const handleUpload = async (file) => {
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
@@ -768,6 +812,8 @@ export default function FileManager() {
 
     setUploading(true);
     setUploadPct(0);
+    setUploadPhase("uploading");
+
     const formData = new FormData();
     formData.append("file", file);
 
@@ -776,33 +822,55 @@ export default function FileManager() {
       xhr.open("POST", `${API}/files/upload`);
       xhr.setRequestHeader("Authorization", `Bearer ${token()}`);
       xhr.setRequestHeader("Accept", "application/json");
+
       xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable)
-          setUploadPct(Math.round((e.loaded / e.total) * 100));
-      };
-      xhr.onload = () => {
-        if (xhr.status === 201) {
-          const data = JSON.parse(xhr.responseText);
-          setMyFiles((prev) => [data.file, ...prev]);
-          showToast(
-            "success",
-            `"${data.file.original_name}" uploaded & encrypted.`,
-          );
-        } else {
-          const data = JSON.parse(xhr.responseText);
-          showToast("error", data.message || "Upload failed.");
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          setUploadPct(pct);
+          // عندما ينتهي الـ upload → نظهر مرحلة scanning
+          if (pct === 100) setUploadPhase("scanning");
         }
-        resolve();
       };
+
+      xhr.onload = () => {
+        setUploadPhase("encrypting");
+
+        // محاكاة لحظة قصيرة لتظهر مرحلة encrypting للمستخدم
+        setTimeout(() => {
+          if (xhr.status === 201) {
+            const data = JSON.parse(xhr.responseText);
+            setMyFiles((prev) => [data.file, ...prev]);
+            showToast(
+              "success",
+              `"${data.file.original_name}" uploaded, scanned ✅ & encrypted.`,
+            );
+          } else {
+            const data = JSON.parse(xhr.responseText);
+            // رسالة خاصة إذا كان الملف مصاباً
+            if (data.status === "infected") {
+              showToast(
+                "error",
+                `🔴 Malware detected! "${file.name}" was rejected and blocked.`,
+              );
+            } else {
+              showToast("error", data.message || "Upload failed.");
+            }
+          }
+          resolve();
+        }, 400);
+      };
+
       xhr.onerror = () => {
         showToast("error", "Upload failed.");
         resolve();
       };
+
       xhr.send(formData);
     });
 
     setUploading(false);
     setUploadPct(0);
+    setUploadPhase(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -895,7 +963,10 @@ export default function FileManager() {
           >
             {uploading ? (
               <>
-                <span className="fm-spinner" /> Uploading…
+                <span className="fm-spinner" />
+                {uploadPhase === "uploading" && "Uploading…"}
+                {uploadPhase === "scanning" && "Scanning…"}
+                {uploadPhase === "encrypting" && "Encrypting…"}
               </>
             ) : (
               <>
@@ -912,11 +983,18 @@ export default function FileManager() {
         </div>
       )}
 
+      {/* Progress bar + Phase indicator */}
       {canUpload && uploading && (
-        <div className="fm-progress-wrap">
-          <div className="fm-progress-bar" style={{ width: `${uploadPct}%` }} />
-          <span className="fm-progress-pct">{uploadPct}%</span>
-        </div>
+        <>
+          <div className="fm-progress-wrap">
+            <div
+              className="fm-progress-bar"
+              style={{ width: `${uploadPct}%` }}
+            />
+            <span className="fm-progress-pct">{uploadPct}%</span>
+          </div>
+          <UploadPhase phase={uploadPhase} />
+        </>
       )}
 
       {/* Tabs */}

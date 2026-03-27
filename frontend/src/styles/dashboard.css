@@ -1741,7 +1741,9 @@
   font-weight: 600;
   color: #374151;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 .btn-cancel:hover:not(:disabled) {
   background: #f9fafb;
@@ -1768,7 +1770,9 @@
   justify-content: center;
   gap: 7px;
   box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);
-  transition: opacity 0.2s, transform 0.15s;
+  transition:
+    opacity 0.2s,
+    transform 0.15s;
 }
 .btn-confirm:hover:not(:disabled) {
   opacity: 0.9;
@@ -1781,4 +1785,76 @@
 .btn-confirm svg {
   width: 15px;
   height: 15px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   أضف هذا الكود في آخر ملف dashboard.css
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Status Badge (نتيجة فحص ClamAV) ── */
+.fm-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.fm-status-badge.safe {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+.fm-status-badge.infected {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+.fm-status-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+/* ── Upload Phase Indicator ── */
+.fm-upload-phases {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.fm-upload-phase {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+.fm-upload-phase.active {
+  color: #1e40af;
+  background: #dbeafe;
+  font-weight: 700;
+}
+.fm-upload-phase.done {
+  color: #065f46;
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.fm-upload-phase:not(:last-child)::after {
+  content: "→";
+  margin-left: 8px;
+  color: #cbd5e1;
+  font-weight: 400;
+  text-decoration: none;
 }

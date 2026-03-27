@@ -52,3 +52,4 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     /* ─── Audit Logs ─── */
     Route::get('/logs', [AuditLogController::class, 'index']);
 });
+

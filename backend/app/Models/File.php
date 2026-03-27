@@ -17,6 +17,7 @@ class File extends Model
         'mime_type',
         'encryption_key',
         'hash',
+        'status',          // ← مضاف: safe | infected | pending
     ];
 
     /* ── العلاقات ── */
@@ -38,12 +39,11 @@ class File extends Model
 
     /* ── Helpers ── */
 
-    /** حجم الملف بصيغة مقروءة (KB / MB) */
     public function getFormattedSizeAttribute(): string
     {
         $bytes = $this->file_size;
-        if ($bytes < 1024)       return "{$bytes} B";
-        if ($bytes < 1048576)    return round($bytes / 1024, 1) . ' KB';
+        if ($bytes < 1024)    return "{$bytes} B";
+        if ($bytes < 1048576) return round($bytes / 1024, 1) . ' KB';
         return round($bytes / 1048576, 2) . ' MB';
     }
 }

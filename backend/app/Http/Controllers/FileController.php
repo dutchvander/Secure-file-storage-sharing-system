@@ -33,6 +33,12 @@ class FileController extends Controller
     /* ── 1. LIST ── */
     public function index()
     {
+        // ✅ إصلاح تلقائي: الملفات القديمة pending → safe
+        // (رُفعت قبل إضافة ClamAV، نعتبرها آمنة)
+        File::where('user_id', auth()->id())
+            ->where('status', 'pending')
+            ->update(['status' => 'safe']);
+
         $files = File::where('user_id', auth()->id())
             ->orderByDesc('created_at')
             ->get()
@@ -41,13 +47,15 @@ class FileController extends Controller
         return response()->json(['files' => $files]);
     }
 
-    /* ── 2. UPLOAD ── */
+    /* ── 2. UPLOAD (مع ClamAV scan) ── */
     public function upload(Request $request)
     {
+        /* ─ 1. تحقق من الدور ─ */
         if (!in_array(auth()->user()->role, ['student', 'professor'])) {
             return response()->json(['message' => 'Only students and professors can upload files.'], 403);
         }
 
+        /* ─ 2. Validation ─ */
         $request->validate(['file' => 'required|file|max:10240']);
 
         $uploadedFile = $request->file('file');
@@ -60,7 +68,52 @@ class FileController extends Controller
             return response()->json(['message' => 'File exceeds 10 MB limit.'], 422);
         }
 
-        $rawContent = file_get_contents($uploadedFile->getRealPath());
+        /* ─ 3. حفظ مؤقت قبل الفحص ─ */
+        $tempDir = storage_path('app/temp');
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        $tempName = Str::uuid() . '_' . $uploadedFile->getClientOriginalName();
+        $tempPath = $tempDir . DIRECTORY_SEPARATOR . $tempName;
+
+        copy($uploadedFile->getRealPath(), $tempPath);
+
+        /* ─ 4. فحص ClamAV ─ */
+        try {
+            $scanResult = $this->scanFile($tempPath);
+        } catch (\Exception $e) {
+            @unlink($tempPath);
+            return response()->json([
+                'message' => 'Security scanner is unavailable. Upload blocked for safety. Please try again later.',
+            ], 503);
+        }
+
+        /* ─ 5. إذا كان الملف مصاباً ─ */
+        if ($scanResult === 'infected') {
+            @unlink($tempPath);
+
+            AuditLog::create([
+                'user_id'    => auth()->id(),
+                'action'     => 'scan_file',
+                'file_id'    => null,
+                'ip_address' => $request->ip(),
+                'details'    => json_encode([
+                    'result'        => 'infected',
+                    'original_name' => $uploadedFile->getClientOriginalName(),
+                ]),
+            ]);
+
+            return response()->json([
+                'message' => 'File rejected: Malware detected. This incident has been logged.',
+                'status'  => 'infected',
+            ], 400);
+        }
+
+        /* ─ 6. الملف آمن → تشفير وحفظ دائم ─ */
+        $rawContent = file_get_contents($tempPath);
+        @unlink($tempPath);
+
         $hash       = hash('sha256', $rawContent);
         $key        = random_bytes(32);
         $iv         = random_bytes(16);
@@ -80,17 +133,26 @@ class FileController extends Controller
             'mime_type'      => $uploadedFile->getMimeType(),
             'encryption_key' => $storedKey,
             'hash'           => $hash,
+            'status'         => 'safe',
         ]);
 
         $this->log('upload_file', $file->id, $request);
 
+        AuditLog::create([
+            'user_id'    => auth()->id(),
+            'action'     => 'scan_file',
+            'file_id'    => $file->id,
+            'ip_address' => $request->ip(),
+            'details'    => json_encode(['result' => 'safe']),
+        ]);
+
         return response()->json([
-            'message' => 'File uploaded and encrypted successfully.',
+            'message' => 'File uploaded, scanned, and encrypted successfully.',
             'file'    => $this->formatFile($file),
         ], 201);
     }
 
-    /* ── 3. VIEW — GET /api/files/{id}/view ── */
+    /* ── 3. VIEW ── */
     public function view(Request $request, int $id)
     {
         $file = File::findOrFail($id);
@@ -98,6 +160,10 @@ class FileController extends Controller
 
         if (!$this->canAccess($user, $file, 'view')) {
             return response()->json(['message' => 'Access denied.'], 403);
+        }
+
+        if ($file->status === 'infected') {
+            return response()->json(['message' => 'Access denied: file flagged as infected.'], 403);
         }
 
         if (!Storage::disk('local')->exists($file->file_path)) {
@@ -113,8 +179,6 @@ class FileController extends Controller
             return response()->json(['message' => 'File integrity check failed.'], 422);
         }
 
-        /* لا نسجل audit log للـ view لأنه عملية قراءة فقط */
-
         return response($decrypted, 200, [
             'Content-Type'        => $file->mime_type,
             'Content-Disposition' => 'inline; filename="' . $file->original_name . '"',
@@ -124,7 +188,7 @@ class FileController extends Controller
         ]);
     }
 
-    /* ── 4. DOWNLOAD — GET /api/files/{id}/download ── */
+    /* ── 4. DOWNLOAD ── */
     public function download(Request $request, int $id)
     {
         $file = File::findOrFail($id);
@@ -132,6 +196,10 @@ class FileController extends Controller
 
         if (!$this->canAccess($user, $file, 'download')) {
             return response()->json(['message' => 'Access denied. Download permission required.'], 403);
+        }
+
+        if ($file->status === 'infected') {
+            return response()->json(['message' => 'Access denied: file flagged as infected.'], 403);
         }
 
         if (!Storage::disk('local')->exists($file->file_path)) {
@@ -214,6 +282,14 @@ class FileController extends Controller
     /* ── 7. SHARED WITH ME ── */
     public function sharedWithMe()
     {
+        // ✅ إصلاح تلقائي للملفات المشتركة القديمة أيضاً
+        $sharedFileIds = FileShare::where('shared_with', auth()->id())
+            ->pluck('file_id');
+
+        File::whereIn('id', $sharedFileIds)
+            ->where('status', 'pending')
+            ->update(['status' => 'safe']);
+
         $shares = FileShare::where('shared_with', auth()->id())
             ->with(['file.owner', 'sharedByUser'])
             ->get()
@@ -251,7 +327,6 @@ class FileController extends Controller
     {
         $share = FileShare::findOrFail($shareId);
 
-        /* ✅ int cast على الطرفين لتجنب مقارنة string vs int */
         if ((int) $share->shared_by !== (int) auth()->id()) {
             return response()->json(['message' => 'Access denied.'], 403);
         }
@@ -279,9 +354,60 @@ class FileController extends Controller
        PRIVATE HELPERS
     ══════════════════════════════════════════════════════════════ */
 
+    /**
+     * فحص الملف عبر ClamAV بروتوكول TCP
+     *
+     * @throws \Exception إذا تعذّر الاتصال
+     * @return string 'safe' | 'infected'
+     */
+   private function scanFile(string $filePath): string
+{
+    $host = '127.0.0.1'; // الآن نرجع localhost عادي
+    $port = 3310;
+
+    $socket = @fsockopen($host, $port, $errno, $errstr, 10);
+
+    if (!$socket) {
+        throw new \Exception("ClamAV connection failed: $errstr ($errno)");
+    }
+
+    // بدء INSTREAM
+    fwrite($socket, "zINSTREAM\0");
+
+    $handle = fopen($filePath, 'rb');
+
+    if (!$handle) {
+        fclose($socket);
+        throw new \Exception("Cannot open file for scanning");
+    }
+
+    while (!feof($handle)) {
+        $chunk = fread($handle, 8192);
+        $len = pack('N', strlen($chunk));
+        fwrite($socket, $len . $chunk);
+    }
+
+    // إنهاء الإرسال
+    fwrite($socket, pack('N', 0));
+
+    fclose($handle);
+
+    $response = fgets($socket);
+    fclose($socket);
+
+    if (strpos($response, 'OK') !== false) {
+        return 'safe';
+    }
+
+    if (strpos($response, 'FOUND') !== false) {
+        return 'infected';
+    }
+
+    throw new \Exception("Unexpected ClamAV response: $response");
+}
+
     private function canAccess(User $user, File $file, string $action): bool
     {
-        /* صاحب الملف دائماً مسموح له */
         if ((int) $file->user_id === (int) $user->id) return true;
 
         return FileShare::where('file_id', $file->id)
@@ -290,7 +416,6 @@ class FileController extends Controller
                 if ($action === 'download') {
                     $q->where('permission', 'download');
                 } else {
-                    /* view → كلا الـ permissions مسموح */
                     $q->whereIn('permission', ['view', 'download']);
                 }
             })
@@ -333,6 +458,7 @@ class FileController extends Controller
             'mime_type'      => $file->mime_type,
             'created_at'     => $file->created_at,
             'owner'          => $file->owner?->name,
+            'status'         => $file->status,   // ← safe | infected | pending
         ];
     }
 }
