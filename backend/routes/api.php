@@ -52,3 +52,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     /* ─── Audit Logs ─── */
     Route::get('/logs', [AuditLogController::class, 'index']);
 });
+
+
+Route::any('/test', function () {
+    return response()->json(['status' => 'ok']);
+});
