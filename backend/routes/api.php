@@ -57,3 +57,42 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 Route::any('/test', function () {
     return response()->json(['status' => 'ok']);
 });
+
+Route::prefix('waf-test')->group(function () {
+
+    Route::any('/xss', function (Request $request) {
+        return response()->json([
+            'status' => 'XSS test passed',
+            'input' => $request->all()
+        ]);
+    });
+
+    Route::any('/sqli', function (Request $request) {
+        return response()->json([
+            'status' => 'SQLi test passed',
+            'input' => $request->all()
+        ]);
+    });
+
+    Route::any('/cmd', function (Request $request) {
+        return response()->json([
+            'status' => 'CMD test passed',
+            'input' => $request->all()
+        ]);
+    });
+
+    Route::any('/path', function (Request $request) {
+        return response()->json([
+            'status' => 'Path test passed',
+            'input' => $request->all()
+        ]);
+    });
+
+    Route::any('/file', function (Request $request) {
+        return response()->json([
+            'status' => 'File test passed',
+            'input' => $request->all()
+        ]);
+    });
+
+})->middleware(\App\Http\Middleware\WafMiddleware::class);
