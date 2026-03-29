@@ -448,6 +448,7 @@ function ConfirmModal({
 function GroupsPage() {
   const [groups, setGroups] = useState([]);
   const [students, setStudents] = useState([]);
+  const [memberSearch, setMemberSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [myFiles, setMyFiles] = useState([]);
   const [newName, setNewName] = useState("");
@@ -1085,15 +1086,46 @@ function GroupsPage() {
             <p className="grp-modal-sub">
               Select students to add to this group:
             </p>
-            <div className="grp-students-list">
-              {students.length === 0 ? (
-                <p
-                  style={{ color: "#9ca3af", fontSize: 13, padding: "12px 0" }}
+
+            {/* ← حقل البحث الجديد */}
+            <div className="grp-search-wrap">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="grp-search-icon"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                className="grp-search-input"
+                placeholder="Search by name or email…"
+                value={memberSearch}
+                onChange={(e) => setMemberSearch(e.target.value)}
+                autoFocus
+              />
+              {memberSearch && (
+                <button
+                  className="grp-search-clear"
+                  onClick={() => setMemberSearch("")}
                 >
-                  No students available.
-                </p>
-              ) : (
-                students.map((s) => {
+                  <Ico.X />
+                </button>
+              )}
+            </div>
+
+            <div className="grp-students-list">
+              {students
+                .filter((s) => {
+                  const q = memberSearch.toLowerCase();
+                  return s.name.toLowerCase().includes(q);
+                  //  || s.email.toLowerCase().includes(q)
+                })
+                .map((s) => {
                   const alreadyIn = membersModal.group.members?.some(
                     (m) => m.id === s.id,
                   );
@@ -1126,15 +1158,34 @@ function GroupsPage() {
                       )}
                     </label>
                   );
-                })
+                })}
+              {students.filter((s) => {
+                const q = memberSearch.toLowerCase();
+                return (
+                  s.name.toLowerCase().includes(q) 
+                  // || s.email.toLowerCase().includes(q)
+                );
+              }).length === 0 && (
+                <p
+                  style={{
+                    color: "#9ca3af",
+                    fontSize: 13,
+                    padding: "12px 0",
+                    textAlign: "center",
+                  }}
+                >
+                  No students match "{memberSearch}"
+                </p>
               )}
             </div>
+
             <div className="fm-modal-actions" style={{ marginTop: 16 }}>
               <button
                 className="fm-btn-cancel"
                 onClick={() => {
                   setMembersModal(null);
                   setSelectedStudents([]);
+                  setMemberSearch("");
                 }}
               >
                 Cancel

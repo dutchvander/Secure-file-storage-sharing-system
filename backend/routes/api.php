@@ -58,3 +58,11 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('/audit-logs',    [AuditLogController::class, 'index']);
     Route::get('/logs',          [AuditLogController::class, 'index']);
 });
+
+
+// // test AI bot
+// Route::get('/test-ai', function() {
+//     return ['message' => 'Hello AI'];
+// });
+
+

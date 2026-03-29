@@ -7,6 +7,7 @@ use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\WafMiddleware; // ✅ أضف هذا
 
 return Application::configure(basePath: dirname(__DIR__))
+
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
@@ -18,7 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
     $middleware->use([
         \Illuminate\Http\Middleware\HandleCors::class,
         \App\Http\Middleware\WafMiddleware::class, // 🔥 هذا ضروري
+       
     ]);
+ 
 
     $middleware->alias([
         'admin' => AdminMiddleware::class,

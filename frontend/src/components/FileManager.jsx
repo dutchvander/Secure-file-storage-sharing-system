@@ -394,6 +394,9 @@ function ShareModal({ file, onClose, onShared }) {
   const [permission, setPermission] = useState("download");
   const [sharing, setSharing] = useState(false);
   const [error, setError] = useState("");
+  const [selectedUser, setSelectedUser] = useState(null); // ← جديد
+  const [userSearch, setUserSearch] = useState(""); // ← جديد
+  const [showDropdown, setShowDropdown] = useState(false); // ← جديد
 
   useEffect(() => {
     fetch(`${API}/users/list`, { headers: headers() })
@@ -445,19 +448,142 @@ function ShareModal({ file, onClose, onShared }) {
             <div className="fm-modal-file-size">{file.formatted_size}</div>
           </div>
         </div>
+
         <label className="fm-label">Share with</label>
-        <select
-          className="fm-select"
-          value={selectedId}
-          onChange={(e) => setSelectedId(e.target.value)}
-        >
-          <option value="">— Select user —</option>
-          {users.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.name} ({u.role}) — {u.email}
-            </option>
-          ))}
-        </select>
+
+        {/* ── Search User ── */}
+        <div style={{ position: "relative" }}>
+          <div className="grp-search-wrap">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="grp-search-icon"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              className="grp-search-input"
+              placeholder="Search by name or email…"
+              value={userSearch}
+              onChange={(e) => {
+                setUserSearch(e.target.value);
+                setShowDropdown(true);
+                if (!e.target.value) {
+                  setSelectedId("");
+                  setSelectedUser(null);
+                }
+              }}
+              onFocus={() => setShowDropdown(true)}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+              autoComplete="off"
+            />
+            {userSearch && (
+              <button
+                className="grp-search-clear"
+                onClick={() => {
+                  setUserSearch("");
+                  setSelectedId("");
+                  setSelectedUser(null);
+                  setShowDropdown(false);
+                }}
+              >
+                <Ico.X />
+              </button>
+            )}
+          </div>
+
+          {/* Dropdown */}
+          {showDropdown && (
+            <div
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                right: 0,
+                background: "#fff",
+                border: "1.5px solid #e5e7eb",
+                borderRadius: 10,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                zIndex: 50,
+                maxHeight: 220,
+                overflowY: "auto",
+                marginTop: 4,
+              }}
+            >
+              {users
+                .filter((u) => {
+                  const q = userSearch.toLowerCase();
+                  return (
+                    u.name.toLowerCase().includes(q) ||
+                    u.email.toLowerCase().includes(q)
+                  );
+                })
+                .map((u) => (
+                  <div
+                    key={u.id}
+                    onMouseDown={(e) => {
+                      e.preventDefault(); // ← هذا يمنع onBlur من الإطلاق
+                      setSelectedId(u.id);
+                      setSelectedUser(u);
+                      setUserSearch(`${u.name} — ${u.email}`);
+                      setShowDropdown(false);
+                    }}
+                    style={{
+                      padding: "10px 14px",
+                      cursor: "pointer",
+                      borderBottom: "1px solid #f3f4f6",
+                      background:
+                        selectedId === u.id ? "rgba(99,102,241,0.06)" : "#fff",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = "#f5f3ff")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background =
+                        selectedId === u.id ? "rgba(99,102,241,0.06)" : "#fff")
+                    }
+                  >
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        fontSize: 13,
+                        color: "#111827",
+                      }}
+                    >
+                      {u.name}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                      {u.email} · {u.role}
+                    </div>
+                  </div>
+                ))}
+              {users.filter((u) => {
+                const q = userSearch.toLowerCase();
+                return (
+                  u.name.toLowerCase().includes(q) ||
+                  u.email.toLowerCase().includes(q)
+                );
+              }).length === 0 && (
+                <div
+                  style={{
+                    padding: "14px",
+                    textAlign: "center",
+                    color: "#9ca3af",
+                    fontSize: 13,
+                  }}
+                >
+                  No users match "{userSearch}"
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         <label className="fm-label" style={{ marginTop: 14 }}>
           Permission
         </label>
