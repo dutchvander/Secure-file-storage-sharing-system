@@ -20,7 +20,7 @@ class GroupController extends Controller
             ->withCount('members')
             ->with([
                 'members:id,name,email,role',
-                'fileShares.file',          // ← مضاف: نجلب الملفات المشتركة
+                'fileShares.file',
                 'fileShares.sharedByUser',
             ])
             ->orderByDesc('created_at')
@@ -117,19 +117,20 @@ class GroupController extends Controller
             ['shared_by' => auth()->id(), 'permission' => $request->permission]
         );
 
+        // ← 'share_file' بدل 'group_share_file' (أقصر)
         AuditLog::create([
             'user_id'    => auth()->id(),
-            'action'     => 'group_share_file',
+            'action'     => 'share_file',
             'file_id'    => $file->id,
             'ip_address' => $request->ip(),
             'details'    => json_encode([
+                'type'       => 'group',
                 'group_id'   => $group->id,
                 'group_name' => $group->name,
                 'permission' => $request->permission,
             ]),
         ]);
 
-        // نعيد المجموعة كاملة مع الملفات المحدّثة
         $updatedGroup = Group::where('id', $id)
             ->withCount('members')
             ->with(['members:id,name,email,role', 'fileShares.file'])
@@ -153,12 +154,16 @@ class GroupController extends Controller
             ->where('file_id', $fileId)
             ->delete();
 
+        // ← 'revoke_share' بدل 'group_revoke_share' (أقصر)
         AuditLog::create([
             'user_id'    => auth()->id(),
-            'action'     => 'group_revoke_share',
+            'action'     => 'revoke_share',
             'file_id'    => $fileId,
             'ip_address' => $request->ip(),
-            'details'    => json_encode(['group_id' => $id]),
+            'details'    => json_encode([
+                'type'     => 'group',
+                'group_id' => $id,
+            ]),
         ]);
 
         return response()->json(['message' => 'Group share revoked.']);
@@ -210,7 +215,6 @@ class GroupController extends Controller
 
     private function formatGroup(Group $group): array
     {
-        // تنسيق الملفات المشتركة مع المجموعة
         $sharedFiles = $group->relationLoaded('fileShares')
             ? $group->fileShares->map(fn($share) => [
                 'share_id'   => $share->id,
@@ -238,7 +242,7 @@ class GroupController extends Controller
                     'email' => $u->email,
                 ])
                 : [],
-            'shared_files'  => $sharedFiles,   // ← مضاف
+            'shared_files'  => $sharedFiles,
             'created_at'    => $group->created_at,
         ];
     }

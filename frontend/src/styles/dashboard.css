@@ -3100,3 +3100,53 @@
   width: 15px;
   height: 15px;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   أضف هذا في نهاية dashboard.css  ← هذا هو الناقص!
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Confirm Modal (بديل window.confirm) ── */
+.grp-confirm-modal {
+  max-width: 400px !important;
+  text-align: center;
+}
+
+.grp-confirm-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+}
+.grp-confirm-icon.danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.grp-confirm-icon.indigo {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+.grp-confirm-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.grp-confirm-title {
+  font-family: "Playfair Display", serif;
+  font-size: 19px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 10px;
+}
+
+.grp-confirm-desc {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.65;
+  margin: 0 0 4px;
+}
+.grp-confirm-desc strong {
+  color: #111827;
+}
