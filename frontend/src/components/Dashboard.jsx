@@ -178,16 +178,131 @@ const Ico = {
       <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
     </svg>
   ),
+  Users: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+  Plus: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  ),
+  Trash: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  ),
+  Share: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+    </svg>
+  ),
+  X: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  ),
+  UserMinus: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="8.5" cy="7" r="4" />
+      <line x1="23" y1="11" x2="17" y2="11" />
+    </svg>
+  ),
+  ChevronDown: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  ),
+  ChevronRight: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  ),
+  LinkOff: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      <line x1="2" y1="2" x2="22" y2="22" />
+    </svg>
+  ),
 };
-
-/* ═══════════════════════════════════════
-   CONSTANTS
-═══════════════════════════════════════ */
-const NAV_ITEMS = [
-  { key: "home", label: "Dashboard", icon: <Ico.Home /> },
-  { key: "files", label: "My Files", icon: <Ico.File /> },
-  { key: "settings", label: "Settings", icon: <Ico.Settings /> },
-];
 
 const ROLE_META = {
   student: {
@@ -216,9 +331,17 @@ const ROLE_META = {
   },
 };
 
-/* ═══════════════════════════════════════
-   HELPERS
-═══════════════════════════════════════ */
+const fileIcon = (mime = "") => {
+  if (mime.startsWith("image/")) return "🖼️";
+  if (mime === "application/pdf") return "📄";
+  if (mime.startsWith("text/")) return "📝";
+  if (mime.includes("spreadsheet") || mime.includes("excel")) return "📊";
+  if (mime.includes("presentation") || mime.includes("powerpoint")) return "📋";
+  if (mime.includes("word") || mime.includes("document")) return "📃";
+  if (mime.includes("zip")) return "🗜️";
+  return "📁";
+};
+
 function getInitials(name) {
   if (!name) return "?";
   return name
@@ -237,13 +360,13 @@ function authHeaders() {
   };
 }
 
-/* ── Alert Banner ── */
 function Alert({ type, msg, onClose }) {
   if (!msg) return null;
-  const ok = type === "success";
   return (
-    <div className={`ss-alert ${ok ? "success" : "error"}`}>
-      <span className="ss-alert-icon">{ok ? <Ico.Check /> : "⚠"}</span>
+    <div className={`ss-alert ${type === "success" ? "success" : "error"}`}>
+      <span className="ss-alert-icon">
+        {type === "success" ? <Ico.Check /> : "⚠"}
+      </span>
       <span className="ss-alert-msg">{msg}</span>
       <button className="ss-alert-close" onClick={onClose}>
         ×
@@ -252,7 +375,6 @@ function Alert({ type, msg, onClose }) {
   );
 }
 
-/* ── Password Input ── */
 function PwInput({ value, onChange, placeholder }) {
   const [show, setShow] = useState(false);
   return (
@@ -276,13 +398,856 @@ function PwInput({ value, onChange, placeholder }) {
 }
 
 /* ═══════════════════════════════════════
+   CONFIRM MODAL  ← بديل window.confirm
+═══════════════════════════════════════ */
+function ConfirmModal({
+  title,
+  message,
+  confirmLabel = "Confirm",
+  danger = true,
+  onConfirm,
+  onCancel,
+  loading = false,
+}) {
+  return (
+    <div className="grp-modal-overlay" onClick={onCancel}>
+      <div
+        className="grp-modal grp-confirm-modal"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Icon */}
+        <div className={`grp-confirm-icon ${danger ? "danger" : "indigo"}`}>
+          {danger ? <Ico.Trash /> : <Ico.LinkOff />}
+        </div>
+        <h3 className="grp-confirm-title">{title}</h3>
+        <p className="grp-confirm-desc">{message}</p>
+        <div className="fm-modal-actions">
+          <button
+            className="fm-btn-cancel"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            Cancel
+          </button>
+          <button
+            className={danger ? "fm-btn-delete" : "fm-btn-share"}
+            onClick={onConfirm}
+            disabled={loading}
+          >
+            {loading ? <span className="fm-spinner" /> : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   GROUPS PAGE
+═══════════════════════════════════════ */
+function GroupsPage() {
+  const [groups, setGroups] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [myFiles, setMyFiles] = useState([]);
+  const [newName, setNewName] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const [expanded, setExpanded] = useState(null);
+  const [activeTab, setActiveTab] = useState({});
+
+  const [shareModal, setShareModal] = useState(null);
+  const [shareFileId, setShareFileId] = useState("");
+  const [sharePerm, setSharePerm] = useState("view");
+  const [sharing, setSharing] = useState(false);
+
+  const [membersModal, setMembersModal] = useState(null);
+  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [addingMembers, setAddingMembers] = useState(false);
+
+  // ← Confirm modals (بدل window.confirm)
+  const [confirmDeleteGroup, setConfirmDeleteGroup] = useState(null); // group object
+  const [confirmRemoveFile, setConfirmRemoveFile] = useState(null); // { groupId, fileId, fileName }
+  const [confirmRemoveMember, setConfirmRemoveMember] = useState(null); // { groupId, userId, userName }
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const [toast, setToast] = useState(null);
+
+  const showToast = (type, msg) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  const getTab = (groupId) => activeTab[groupId] || "members";
+  const setTab = (groupId, tab) =>
+    setActiveTab((prev) => ({ ...prev, [groupId]: tab }));
+
+  /* ── Fetch all ── */
+  const fetchAll = async () => {
+    setLoading(true);
+    try {
+      const [gRes, sRes, fRes] = await Promise.all([
+        fetch(`${API}/groups`, { headers: authHeaders() }),
+        fetch(`${API}/groups/students`, { headers: authHeaders() }),
+        fetch(`${API}/files`, { headers: authHeaders() }),
+      ]);
+      const [gData, sData, fData] = await Promise.all([
+        gRes.json(),
+        sRes.json(),
+        fRes.json(),
+      ]);
+      setGroups(gData.groups ?? []);
+      setStudents(sData.students ?? []);
+      setMyFiles(fData.files ?? []);
+    } catch {
+      showToast("error", "Failed to load data.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  /* ── Create group ── */
+  const createGroup = async () => {
+    if (!newName.trim()) return;
+    setCreating(true);
+    try {
+      const res = await fetch(`${API}/groups`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ name: newName.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed");
+      setGroups((prev) => [data.group, ...prev]);
+      setNewName("");
+      showToast("success", `Group "${data.group.name}" created.`);
+    } catch (e) {
+      showToast("error", e.message);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  /* ── Delete group (confirmed) ── */
+  const handleDeleteGroup = async () => {
+    if (!confirmDeleteGroup) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`${API}/groups/${confirmDeleteGroup.id}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error();
+      setGroups((prev) => prev.filter((g) => g.id !== confirmDeleteGroup.id));
+      showToast("success", `Group "${confirmDeleteGroup.name}" deleted.`);
+    } catch {
+      showToast("error", "Failed to delete group.");
+    } finally {
+      setActionLoading(false);
+      setConfirmDeleteGroup(null);
+    }
+  };
+
+  /* ── Add members ── */
+  const addMembers = async () => {
+    if (!selectedStudents.length) return;
+    setAddingMembers(true);
+    try {
+      const res = await fetch(
+        `${API}/groups/${membersModal.group.id}/members`,
+        {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ user_ids: selectedStudents }),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed");
+      setGroups((prev) =>
+        prev.map((g) => (g.id === membersModal.group.id ? data.group : g)),
+      );
+      setMembersModal(null);
+      setSelectedStudents([]);
+      showToast("success", `${data.added_count} member(s) added.`);
+    } catch (e) {
+      showToast("error", e.message);
+    } finally {
+      setAddingMembers(false);
+    }
+  };
+
+  /* ── Remove member (confirmed) ── */
+  const handleRemoveMember = async () => {
+    if (!confirmRemoveMember) return;
+    const { groupId, userId } = confirmRemoveMember;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`${API}/groups/${groupId}/members/${userId}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error();
+      setGroups((prev) =>
+        prev.map((g) =>
+          g.id === groupId
+            ? {
+                ...g,
+                members: g.members.filter((m) => m.id !== userId),
+                members_count: g.members_count - 1,
+              }
+            : g,
+        ),
+      );
+      showToast("success", "Member removed.");
+    } catch {
+      showToast("error", "Failed to remove member.");
+    } finally {
+      setActionLoading(false);
+      setConfirmRemoveMember(null);
+    }
+  };
+
+  /* ── Share file ── */
+  const shareWithGroup = async () => {
+    if (!shareFileId) {
+      showToast("error", "Please select a file.");
+      return;
+    }
+    setSharing(true);
+    try {
+      const res = await fetch(`${API}/groups/${shareModal.group.id}/share`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ file_id: shareFileId, permission: sharePerm }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed");
+      if (data.group) {
+        setGroups((prev) =>
+          prev.map((g) => (g.id === shareModal.group.id ? data.group : g)),
+        );
+      }
+      setShareModal(null);
+      setShareFileId("");
+      showToast("success", data.message);
+    } catch (e) {
+      showToast("error", e.message);
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  /* ── Revoke file from group (confirmed) ── */
+  const handleRevokeFile = async () => {
+    if (!confirmRemoveFile) return;
+    const { groupId, fileId } = confirmRemoveFile;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`${API}/groups/${groupId}/share/${fileId}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || `HTTP ${res.status}`);
+      }
+      // نحدّث الـ state مباشرة
+      setGroups((prev) =>
+        prev.map((g) =>
+          g.id === groupId
+            ? {
+                ...g,
+                shared_files: (g.shared_files || []).filter(
+                  (s) => s.file_id !== fileId,
+                ),
+              }
+            : g,
+        ),
+      );
+      showToast("success", "File removed from group.");
+    } catch (e) {
+      showToast("error", `Failed to remove file: ${e.message}`);
+    } finally {
+      setActionLoading(false);
+      setConfirmRemoveFile(null);
+    }
+  };
+
+  const toggleStudent = (id) =>
+    setSelectedStudents((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+
+  if (loading)
+    return (
+      <div className="db-loading">
+        <span className="db-spinner large" />
+        <p>Loading groups…</p>
+      </div>
+    );
+
+  return (
+    <div className="grp-wrap">
+      {/* ── Create Group ── */}
+      <div className="grp-create-card">
+        <h3 className="grp-section-title">
+          <span className="grp-title-icon">
+            <Ico.Plus />
+          </span>
+          Create New Group
+        </h3>
+        <div className="grp-create-row">
+          <input
+            className="grp-input"
+            placeholder="Group name (e.g. L3 Security)"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && createGroup()}
+          />
+          <button
+            className="grp-btn-primary"
+            onClick={createGroup}
+            disabled={creating || !newName.trim()}
+          >
+            {creating ? (
+              <span className="fm-spinner" />
+            ) : (
+              <>
+                <Ico.Plus /> Create
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Groups List ── */}
+      {groups.length === 0 ? (
+        <div className="grp-empty">
+          <span style={{ fontSize: 40 }}>👥</span>
+          <p>No groups yet. Create your first group above.</p>
+        </div>
+      ) : (
+        <div className="grp-list">
+          {groups.map((group) => {
+            const isOpen = expanded === group.id;
+            const tab = getTab(group.id);
+            const sharedFiles = group.shared_files || [];
+
+            return (
+              <div
+                key={group.id}
+                className={`grp-card${isOpen ? " open" : ""}`}
+              >
+                {/* ── Card Header ── */}
+                <div
+                  className="grp-card-header"
+                  onClick={() => setExpanded(isOpen ? null : group.id)}
+                >
+                  <div className="grp-card-left">
+                    <div className="grp-avatar">
+                      {group.name[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="grp-name">{group.name}</div>
+                      <div className="grp-meta">
+                        {group.members_count} member
+                        {group.members_count !== 1 ? "s" : ""}
+                        {sharedFiles.length > 0 && (
+                          <span className="grp-files-badge">
+                            · {sharedFiles.length} file
+                            {sharedFiles.length !== 1 ? "s" : ""} shared
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grp-card-actions">
+                    <button
+                      className="grp-btn-share"
+                      title="Share file with group"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShareModal({ group });
+                        setShareFileId("");
+                        setSharePerm("view");
+                      }}
+                    >
+                      <Ico.Share /> Share File
+                    </button>
+                    <button
+                      className="grp-btn-add"
+                      title="Add members"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMembersModal({ group });
+                        setSelectedStudents([]);
+                      }}
+                    >
+                      <Ico.Plus /> Add Members
+                    </button>
+                    <button
+                      className="grp-btn-delete"
+                      title="Delete group"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDeleteGroup(group);
+                      }}
+                    >
+                      <Ico.Trash />
+                    </button>
+                    <span className="grp-chevron">
+                      {isOpen ? <Ico.ChevronDown /> : <Ico.ChevronRight />}
+                    </span>
+                  </div>
+                </div>
+
+                {/* ── Expanded Body ── */}
+                {isOpen && (
+                  <div className="grp-expanded">
+                    {/* Tab bar */}
+                    <div className="grp-tab-bar">
+                      <button
+                        className={`grp-tab${tab === "members" ? " active" : ""}`}
+                        onClick={() => setTab(group.id, "members")}
+                      >
+                        <Ico.Users /> Members
+                        <span className="grp-tab-count">
+                          {group.members_count}
+                        </span>
+                      </button>
+                      <button
+                        className={`grp-tab${tab === "files" ? " active" : ""}`}
+                        onClick={() => setTab(group.id, "files")}
+                      >
+                        <Ico.File /> Shared Files
+                        <span className="grp-tab-count">
+                          {sharedFiles.length}
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Tab: Members */}
+                    {tab === "members" && (
+                      <div className="grp-members">
+                        {!group.members || group.members.length === 0 ? (
+                          <p className="grp-members-empty">
+                            No members yet. Click "Add Members" to get started.
+                          </p>
+                        ) : (
+                          <table className="grp-members-table">
+                            <thead>
+                              <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {group.members.map((m) => (
+                                <tr key={m.id}>
+                                  <td>
+                                    <div className="grp-member-cell">
+                                      <div className="grp-member-avatar">
+                                        {getInitials(m.name)}
+                                      </div>
+                                      <span>{m.name}</span>
+                                    </div>
+                                  </td>
+                                  <td className="grp-member-email">
+                                    {m.email}
+                                  </td>
+                                  <td>
+                                    <button
+                                      className="grp-remove-btn"
+                                      title="Remove member"
+                                      onClick={() =>
+                                        setConfirmRemoveMember({
+                                          groupId: group.id,
+                                          userId: m.id,
+                                          userName: m.name,
+                                        })
+                                      }
+                                    >
+                                      <Ico.UserMinus />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Tab: Shared Files */}
+                    {tab === "files" && (
+                      <div className="grp-members">
+                        {sharedFiles.length === 0 ? (
+                          <p className="grp-members-empty">
+                            No files shared with this group yet.
+                            <br />
+                            Click <strong>"Share File"</strong> above to get
+                            started.
+                          </p>
+                        ) : (
+                          <table className="grp-members-table">
+                            <thead>
+                              <tr>
+                                <th>File</th>
+                                <th>Permission</th>
+                                <th>Shared At</th>
+                                <th></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {sharedFiles.map((s) => (
+                                <tr key={s.share_id}>
+                                  <td>
+                                    <div className="grp-member-cell">
+                                      <span style={{ fontSize: 20 }}>
+                                        {fileIcon(s.file?.mime_type)}
+                                      </span>
+                                      <div>
+                                        <div
+                                          style={{
+                                            fontWeight: 600,
+                                            fontSize: 13,
+                                            color: "#111827",
+                                          }}
+                                        >
+                                          {s.file?.original_name}
+                                        </div>
+                                        <div
+                                          style={{
+                                            fontSize: 11,
+                                            color: "#9ca3af",
+                                          }}
+                                        >
+                                          {s.file?.formatted_size}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <span
+                                      className={`fm-perm-badge ${s.permission}`}
+                                    >
+                                      {s.permission === "view"
+                                        ? "View Only"
+                                        : "Download"}
+                                    </span>
+                                  </td>
+                                  <td className="grp-member-email">
+                                    {s.shared_at
+                                      ? new Date(
+                                          s.shared_at,
+                                        ).toLocaleDateString("en-GB", {
+                                          day: "numeric",
+                                          month: "short",
+                                          year: "numeric",
+                                        })
+                                      : "—"}
+                                  </td>
+                                  <td>
+                                    {/* ← نمرر file_id وليس share_id */}
+                                    <button
+                                      className="grp-remove-btn"
+                                      title="Remove file from group"
+                                      onClick={() =>
+                                        setConfirmRemoveFile({
+                                          groupId: group.id,
+                                          fileId: s.file_id,
+                                          fileName: s.file?.original_name,
+                                        })
+                                      }
+                                    >
+                                      <Ico.LinkOff />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ══ SHARE FILE MODAL ══ */}
+      {shareModal && (
+        <div className="grp-modal-overlay" onClick={() => setShareModal(null)}>
+          <div className="grp-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="grp-modal-header">
+              <h3>
+                Share File with <em>{shareModal.group.name}</em>
+              </h3>
+              <button
+                className="fm-modal-close"
+                onClick={() => setShareModal(null)}
+              >
+                <Ico.X />
+              </button>
+            </div>
+            <label className="fm-label">Select File</label>
+            <select
+              className="fm-select"
+              value={shareFileId}
+              onChange={(e) => setShareFileId(e.target.value)}
+            >
+              <option value="">— Choose a file —</option>
+              {myFiles
+                .filter((f) => f.status === "safe")
+                .map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.original_name} ({f.formatted_size})
+                  </option>
+                ))}
+            </select>
+            <label className="fm-label" style={{ marginTop: 14 }}>
+              Permission
+            </label>
+            <div className="fm-permission-row">
+              {[
+                {
+                  val: "view",
+                  label: "View Only",
+                  desc: "Can preview inside the app",
+                },
+                {
+                  val: "download",
+                  label: "Download",
+                  desc: "Can preview and download",
+                },
+              ].map((p) => (
+                <button
+                  key={p.val}
+                  className={`fm-perm-btn${sharePerm === p.val ? " active" : ""}`}
+                  onClick={() => setSharePerm(p.val)}
+                >
+                  <span className="fm-perm-label">{p.label}</span>
+                  <span className="fm-perm-desc">{p.desc}</span>
+                </button>
+              ))}
+            </div>
+            <div className="fm-modal-actions" style={{ marginTop: 20 }}>
+              <button
+                className="fm-btn-cancel"
+                onClick={() => setShareModal(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="fm-btn-share"
+                onClick={shareWithGroup}
+                disabled={sharing || !shareFileId}
+              >
+                {sharing ? (
+                  <span className="fm-spinner" />
+                ) : (
+                  <>
+                    <Ico.Share /> Share with Group
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ ADD MEMBERS MODAL ══ */}
+      {membersModal && (
+        <div
+          className="grp-modal-overlay"
+          onClick={() => setMembersModal(null)}
+        >
+          <div className="grp-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="grp-modal-header">
+              <h3>
+                Add Members to <em>{membersModal.group.name}</em>
+              </h3>
+              <button
+                className="fm-modal-close"
+                onClick={() => setMembersModal(null)}
+              >
+                <Ico.X />
+              </button>
+            </div>
+            <p className="grp-modal-sub">
+              Select students to add to this group:
+            </p>
+            <div className="grp-students-list">
+              {students.length === 0 ? (
+                <p
+                  style={{ color: "#9ca3af", fontSize: 13, padding: "12px 0" }}
+                >
+                  No students available.
+                </p>
+              ) : (
+                students.map((s) => {
+                  const alreadyIn = membersModal.group.members?.some(
+                    (m) => m.id === s.id,
+                  );
+                  const selected = selectedStudents.includes(s.id);
+                  return (
+                    <label
+                      key={s.id}
+                      className={`grp-student-item${alreadyIn ? " already-in" : ""}${selected ? " selected" : ""}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selected || alreadyIn}
+                        disabled={alreadyIn}
+                        onChange={() => !alreadyIn && toggleStudent(s.id)}
+                      />
+                      <div
+                        className="grp-member-avatar"
+                        style={{ width: 28, height: 28, fontSize: 10 }}
+                      >
+                        {getInitials(s.name)}
+                      </div>
+                      <div className="grp-student-info">
+                        <span className="grp-student-name">{s.name}</span>
+                        <span className="grp-student-email">{s.email}</span>
+                      </div>
+                      {alreadyIn && (
+                        <span className="grp-already-badge">
+                          Already in group
+                        </span>
+                      )}
+                    </label>
+                  );
+                })
+              )}
+            </div>
+            <div className="fm-modal-actions" style={{ marginTop: 16 }}>
+              <button
+                className="fm-btn-cancel"
+                onClick={() => {
+                  setMembersModal(null);
+                  setSelectedStudents([]);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="fm-btn-share"
+                onClick={addMembers}
+                disabled={addingMembers || selectedStudents.length === 0}
+              >
+                {addingMembers ? (
+                  <span className="fm-spinner" />
+                ) : (
+                  <>
+                    <Ico.Plus /> Add{" "}
+                    {selectedStudents.length > 0
+                      ? `(${selectedStudents.length})`
+                      : ""}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ CONFIRM: DELETE GROUP ══ */}
+      {confirmDeleteGroup && (
+        <ConfirmModal
+          title="Delete Group"
+          message={
+            <>
+              Are you sure you want to delete{" "}
+              <strong>"{confirmDeleteGroup.name}"</strong>? All members and
+              shared files will be removed.
+            </>
+          }
+          confirmLabel={
+            <>
+              <Ico.Trash /> Delete Group
+            </>
+          }
+          danger={true}
+          loading={actionLoading}
+          onConfirm={handleDeleteGroup}
+          onCancel={() => setConfirmDeleteGroup(null)}
+        />
+      )}
+
+      {/* ══ CONFIRM: REMOVE FILE FROM GROUP ══ */}
+      {confirmRemoveFile && (
+        <ConfirmModal
+          title="Remove File from Group"
+          message={
+            <>
+              Remove <strong>"{confirmRemoveFile.fileName}"</strong> from this
+              group? Students will lose access to it.
+            </>
+          }
+          confirmLabel={
+            <>
+              <Ico.LinkOff /> Remove File
+            </>
+          }
+          danger={true}
+          loading={actionLoading}
+          onConfirm={handleRevokeFile}
+          onCancel={() => setConfirmRemoveFile(null)}
+        />
+      )}
+
+      {/* ══ CONFIRM: REMOVE MEMBER ══ */}
+      {confirmRemoveMember && (
+        <ConfirmModal
+          title="Remove Member"
+          message={
+            <>
+              Remove <strong>{confirmRemoveMember.userName}</strong> from this
+              group?
+            </>
+          }
+          confirmLabel={
+            <>
+              <Ico.UserMinus /> Remove
+            </>
+          }
+          danger={true}
+          loading={actionLoading}
+          onConfirm={handleRemoveMember}
+          onCancel={() => setConfirmRemoveMember(null)}
+        />
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div
+          className={`fm-toast ${toast.type}`}
+          style={{ position: "fixed", bottom: 28, right: 28, zIndex: 300 }}
+        >
+          {toast.type === "success" ? <Ico.Check /> : <Ico.X />}
+          <span>{toast.msg}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
    SETTINGS PAGE
 ═══════════════════════════════════════ */
 function SettingsPage({ user, onUserUpdate }) {
   const [name, setName] = useState(user?.name || "");
   const [nameLoading, setNameLoading] = useState(false);
   const [nameAlert, setNameAlert] = useState({ type: "", msg: "" });
-
   const [curPw, setCurPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [conPw, setConPw] = useState("");
@@ -292,7 +1257,6 @@ function SettingsPage({ user, onUserUpdate }) {
   const roleMeta = ROLE_META[user?.role] || ROLE_META.student;
   const initials = getInitials(user?.name);
 
-  /* ── Save name ── */
   const saveName = async () => {
     if (!name.trim() || name.trim() === user?.name) return;
     setNameLoading(true);
@@ -314,7 +1278,6 @@ function SettingsPage({ user, onUserUpdate }) {
     }
   };
 
-  /* ── Save password ── */
   const savePw = async () => {
     if (!curPw || !newPw || !conPw) {
       setPwAlert({ type: "error", msg: "Please fill in all fields." });
@@ -359,46 +1322,9 @@ function SettingsPage({ user, onUserUpdate }) {
   const pwStrength = newPw.length >= 12 ? 2 : newPw.length >= 8 ? 1 : 0;
   const pwColors = ["#ef4444", "#f59e0b", "#22c55e"];
   const pwLabels = ["Weak", "Fair", "Strong"];
-  function LogoutDialog({ onCancel, onConfirm, loading }) {
-  return (
-    <div className="ad-modal-overlay" onClick={onCancel}>
-      <div className="ad-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="ad-modal-icon">
-          <Ico.LogOut />
-        </div>
-        <h2 className="ad-modal-title">Confirm Logout</h2>
-        <p className="ad-modal-desc">
-          Are you sure you want to leave the admin panel?
-        </p>
-        <div className="ad-modal-actions">
-          <button
-            className="ad-modal-cancel"
-            onClick={onCancel}
-            disabled={loading}
-          >
-            Stay
-          </button>
-          <button
-            className="ad-modal-confirm"
-            onClick={onConfirm}
-            disabled={loading}
-          >
-            {loading ? (
-              <span className="ad-spinner" />
-            ) : (
-              <>
-                <Ico.LogOut /> Yes, Logout
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+
   return (
     <div className="ss-wrap">
-      {/* Account Info */}
       <div className="ss-card">
         <div className="ss-card-accent" />
         <div className="ss-card-head">
@@ -437,7 +1363,6 @@ function SettingsPage({ user, onUserUpdate }) {
         </div>
       </div>
 
-      {/* Update Name */}
       <div className="ss-card">
         <div className="ss-card-head">
           <span className="ss-card-ico">
@@ -499,7 +1424,6 @@ function SettingsPage({ user, onUserUpdate }) {
         </div>
       </div>
 
-      {/* Change Password */}
       <div className="ss-card">
         <div className="ss-card-head">
           <span className="ss-card-ico">
@@ -550,7 +1474,6 @@ function SettingsPage({ user, onUserUpdate }) {
                 />
               </div>
             </div>
-
             {newPw && (
               <div className="ss-strength-row">
                 {[0, 1, 2].map((i) => (
@@ -568,7 +1491,6 @@ function SettingsPage({ user, onUserUpdate }) {
                 </span>
               </div>
             )}
-
             {conPw && newPw && (
               <p
                 className="ss-match"
@@ -579,7 +1501,6 @@ function SettingsPage({ user, onUserUpdate }) {
                   : "✗ Passwords do not match"}
               </p>
             )}
-
             <div className="ss-save-row">
               <button
                 className="ss-save-btn"
@@ -615,13 +1536,13 @@ export default function Dashboard({ onLogout }) {
   const [active, setActive] = useState("home");
   const [loggingOut, setLoggingOut] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
       window.location.href = "/login";
       return;
     }
-
     fetch(`${API}/user`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     })
@@ -655,6 +1576,7 @@ export default function Dashboard({ onLogout }) {
     }
   };
 
+  const isProfessor = user?.role === "professor";
   const initials = getInitials(user?.name);
   const joined = user?.created_at
     ? new Date(user.created_at).toLocaleDateString("en-GB", {
@@ -664,18 +1586,30 @@ export default function Dashboard({ onLogout }) {
       })
     : "—";
 
+  const NAV_ITEMS = [
+    { key: "home", label: "Dashboard", icon: <Ico.Home /> },
+    { key: "files", label: "My Files", icon: <Ico.File /> },
+    ...(isProfessor
+      ? [{ key: "groups", label: "My Groups", icon: <Ico.Users /> }]
+      : []),
+    { key: "settings", label: "Settings", icon: <Ico.Settings /> },
+  ];
+
   const HEADER_META = {
     home: { title: "Overview", sub: "Welcome back to your secure workspace." },
     files: {
       title: "My Files",
       sub: "Upload, download and share encrypted files.",
     },
+    groups: {
+      title: "My Groups",
+      sub: "Create groups and share files with students.",
+    },
     settings: { title: "Settings", sub: "Manage your account preferences." },
   };
 
   return (
     <div className="db-wrap">
-      {/* ── Sidebar ── */}
       <aside className="db-sidebar">
         <div className="db-logo">
           <div className="db-logo-icon">
@@ -683,7 +1617,6 @@ export default function Dashboard({ onLogout }) {
           </div>
           <span className="db-logo-name">SecureVault</span>
         </div>
-
         <nav className="db-nav">
           {NAV_ITEMS.map((item) => (
             <button
@@ -696,7 +1629,6 @@ export default function Dashboard({ onLogout }) {
             </button>
           ))}
         </nav>
-
         <div className="db-sidebar-footer">
           <div className="db-mini-avatar">{initials}</div>
           <div className="db-mini-info">
@@ -708,12 +1640,11 @@ export default function Dashboard({ onLogout }) {
         </div>
       </aside>
 
-      {/* ── Main ── */}
       <main className="db-main">
         <header className="db-header">
           <div className="db-header-left">
-            <h1 className="db-header-title">{HEADER_META[active].title}</h1>
-            <p className="db-header-sub">{HEADER_META[active].sub}</p>
+            <h1 className="db-header-title">{HEADER_META[active]?.title}</h1>
+            <p className="db-header-sub">{HEADER_META[active]?.sub}</p>
           </div>
           <button
             className="db-logout-btn"
@@ -738,10 +1669,8 @@ export default function Dashboard({ onLogout }) {
               <p>Loading your profile…</p>
             </div>
           )}
-
           {error && !loading && <div className="db-error-box">{error}</div>}
 
-          {/* HOME */}
           {!loading && !error && active === "home" && (
             <>
               <div className="db-profile-card">
@@ -776,7 +1705,6 @@ export default function Dashboard({ onLogout }) {
                   <span>Secure</span>
                 </div>
               </div>
-
               <div className="db-cards">
                 {[
                   {
@@ -802,29 +1730,28 @@ export default function Dashboard({ onLogout }) {
             </>
           )}
 
-          {/* FILES */}
           {!loading && !error && active === "files" && <FileManager />}
-
-          {/* SETTINGS */}
+          {!loading && !error && active === "groups" && isProfessor && (
+            <GroupsPage />
+          )}
           {!loading && !error && active === "settings" && (
             <SettingsPage user={user} onUserUpdate={(u) => setUser(u)} />
           )}
         </div>
       </main>
+
+      {/* Logout Dialog */}
       {showLogoutDialog && (
         <div
           className="logout-modal-overlay"
           onClick={() => setShowLogoutDialog(false)}
         >
           <div className="logout-modal" onClick={(e) => e.stopPropagation()}>
-            {/* أيقونة */}
             <div className="logout-modal-icon">
               <Ico.LogOut />
             </div>
-
             <h3>Confirm Logout</h3>
             <p>Are you sure you want to leave your secure workspace?</p>
-
             <div className="logout-actions">
               <button
                 className="btn-cancel"
@@ -833,7 +1760,6 @@ export default function Dashboard({ onLogout }) {
               >
                 Stay
               </button>
-
               <button
                 className="btn-confirm"
                 disabled={loggingOut}
@@ -852,8 +1778,7 @@ export default function Dashboard({ onLogout }) {
                   />
                 ) : (
                   <>
-                    <Ico.LogOut />
-                    Yes, Logout
+                    <Ico.LogOut /> Yes, Logout
                   </>
                 )}
               </button>

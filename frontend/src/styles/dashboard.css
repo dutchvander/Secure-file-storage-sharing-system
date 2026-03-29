@@ -1858,3 +1858,1245 @@
   font-weight: 400;
   text-decoration: none;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   GROUPS PAGE  (grp-*)
+   أضف هذا في نهاية dashboard.css
+═══════════════════════════════════════════════════════════════ */
+
+.grp-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: dbFadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Create card ── */
+.grp-create-card {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px 28px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+}
+
+.grp-section-title {
+  font-family: "Playfair Display", serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.grp-title-icon {
+  width: 16px;
+  height: 16px;
+  color: #6366f1;
+  display: flex;
+  align-items: center;
+}
+.grp-title-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.grp-create-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.grp-input {
+  flex: 1;
+  height: 44px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-family: "Outfit", sans-serif;
+  font-size: 14px;
+  color: #111827;
+  background: #fafafa;
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.grp-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  background: #fff;
+}
+.grp-input::placeholder {
+  color: #c4c9d4;
+}
+
+.grp-btn-primary {
+  height: 44px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #fff;
+  font-family: "Outfit", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  transition:
+    opacity 0.2s,
+    transform 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.grp-btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.grp-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.grp-btn-primary svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ── Empty state ── */
+.grp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 12px;
+  color: #9ca3af;
+  font-size: 14px;
+  text-align: center;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 16px;
+}
+
+/* ── Groups list ── */
+.grp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Group card ── */
+.grp-card {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.2s;
+}
+.grp-card.open {
+  border-color: #a5b4fc;
+}
+
+.grp-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.grp-card-header:hover {
+  background: #fafafa;
+}
+
+.grp-card-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.grp-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #6366f1, #10b981);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.grp-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.grp-meta {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+.grp-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.grp-btn-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 13px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(99, 102, 241, 0.25);
+  background: #f5f3ff;
+  color: #6366f1;
+  font-family: "Outfit", sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.grp-btn-share:hover {
+  background: #ede9fe;
+  border-color: rgba(99, 102, 241, 0.5);
+}
+.grp-btn-share svg {
+  width: 13px;
+  height: 13px;
+}
+
+.grp-btn-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 13px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(16, 185, 129, 0.25);
+  background: #f0fdf4;
+  color: #059669;
+  font-family: "Outfit", sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.grp-btn-add:hover {
+  background: #dcfce7;
+  border-color: rgba(16, 185, 129, 0.5);
+}
+.grp-btn-add svg {
+  width: 13px;
+  height: 13px;
+}
+
+.grp-btn-delete {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(220, 38, 38, 0.2);
+  background: #fff5f5;
+  color: #dc2626;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s;
+  flex-shrink: 0;
+}
+.grp-btn-delete:hover {
+  background: #fee2e2;
+  border-color: rgba(220, 38, 38, 0.5);
+}
+.grp-btn-delete svg {
+  width: 14px;
+  height: 14px;
+}
+
+.grp-chevron {
+  width: 18px;
+  height: 18px;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.grp-chevron svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ── Members section ── */
+.grp-members {
+  border-top: 1px solid #f3f4f6;
+  padding: 16px 20px;
+  background: #fafafa;
+}
+
+.grp-members-empty {
+  font-size: 13px;
+  color: #9ca3af;
+  text-align: center;
+  padding: 16px 0;
+}
+
+.grp-members-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.grp-members-table th {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.grp-members-table td {
+  padding: 10px;
+  font-size: 13px;
+  color: #374151;
+  vertical-align: middle;
+  border-bottom: 1px solid #f3f4f6;
+}
+.grp-members-table tr:last-child td {
+  border-bottom: none;
+}
+
+.grp-member-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.grp-member-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #10b981);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.grp-member-email {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.grp-remove-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #dc2626;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  float: right;
+}
+.grp-remove-btn:hover {
+  background: #fee2e2;
+  border-color: rgba(220, 38, 38, 0.4);
+}
+.grp-remove-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* ── Modals ── */
+.grp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fmOverlayIn 0.2s ease;
+}
+
+.grp-modal {
+  background: #fff;
+  border-radius: 18px;
+  padding: 28px 32px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+  animation: fmModalIn 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.grp-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.grp-modal-header h3 {
+  font-family: "Playfair Display", serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+.grp-modal-header em {
+  color: #6366f1;
+  font-style: normal;
+}
+
+.grp-modal-sub {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 14px;
+}
+
+/* ── Students list (add members modal) ── */
+.grp-students-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.grp-student-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  user-select: none;
+}
+.grp-student-item:hover:not(.already-in) {
+  background: #f5f3ff;
+}
+.grp-student-item.selected {
+  background: rgba(99, 102, 241, 0.06);
+}
+.grp-student-item.already-in {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.grp-student-item input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: #6366f1;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.grp-student-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.grp-student-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #111827;
+}
+.grp-student-email {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.grp-already-badge {
+  font-size: 11px;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Logout modal (kept from original) ── */
+.logout-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.logout-modal {
+  background: #fff;
+  border-radius: 18px;
+  padding: 36px 32px;
+  max-width: 380px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+  animation: fmModalIn 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.logout-modal-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fee2e2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  color: #dc2626;
+}
+.logout-modal-icon svg {
+  width: 24px;
+  height: 24px;
+}
+.logout-modal h3 {
+  font-family: "Playfair Display", serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px;
+}
+.logout-modal p {
+  font-size: 13.5px;
+  color: #6b7280;
+  margin: 0 0 24px;
+}
+.logout-actions {
+  display: flex;
+  gap: 10px;
+}
+.btn-cancel {
+  flex: 1;
+  height: 44px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  font-family: "Outfit", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-cancel:hover {
+  background: #f9fafb;
+}
+.btn-confirm {
+  flex: 1;
+  height: 44px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  color: #fff;
+  font-family: "Outfit", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);
+  transition:
+    opacity 0.2s,
+    transform 0.15s;
+}
+.btn-confirm:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.btn-confirm:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn-confirm svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   أضف هذا في نهاية dashboard.css  (بعد .grp-already-badge)
+═══════════════════════════════════════════════════════════════ */
+
+/* ── files badge في header المجموعة ── */
+.grp-files-badge {
+  margin-left: 6px;
+  color: #6366f1;
+  font-weight: 600;
+}
+
+/* ── Expanded body (يحتوي tab bar + المحتوى) ── */
+.grp-expanded {
+  border-top: 1px solid #f3f4f6;
+}
+
+/* ── Tab bar ── */
+.grp-tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 1.5px solid #e5e7eb;
+  background: #fafafa;
+  padding: 0 20px;
+}
+
+.grp-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  background: transparent;
+  font-family: "Outfit", sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition:
+    color 0.18s,
+    border-color 0.18s;
+  margin-bottom: -1.5px;
+}
+.grp-tab:hover {
+  color: #374151;
+}
+.grp-tab.active {
+  color: #6366f1;
+  border-bottom-color: #6366f1;
+  font-weight: 600;
+}
+.grp-tab svg {
+  width: 14px;
+  height: 14px;
+}
+
+.grp-tab-count {
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 100px;
+}
+.grp-tab.active .grp-tab-count {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+/* ═══════════════════════════════════════════════════════════════
+   GROUPS PAGE  (grp-*)
+   أضف هذا في نهاية dashboard.css
+═══════════════════════════════════════════════════════════════ */
+
+.grp-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: dbFadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Create card ── */
+.grp-create-card {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px 28px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+}
+
+.grp-section-title {
+  font-family: "Playfair Display", serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.grp-title-icon {
+  width: 16px;
+  height: 16px;
+  color: #6366f1;
+  display: flex;
+  align-items: center;
+}
+.grp-title-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.grp-create-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.grp-input {
+  flex: 1;
+  height: 44px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-family: "Outfit", sans-serif;
+  font-size: 14px;
+  color: #111827;
+  background: #fafafa;
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.grp-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  background: #fff;
+}
+.grp-input::placeholder {
+  color: #c4c9d4;
+}
+
+.grp-btn-primary {
+  height: 44px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #fff;
+  font-family: "Outfit", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  transition:
+    opacity 0.2s,
+    transform 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.grp-btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.grp-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.grp-btn-primary svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ── Empty state ── */
+.grp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 12px;
+  color: #9ca3af;
+  font-size: 14px;
+  text-align: center;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 16px;
+}
+
+/* ── Groups list ── */
+.grp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Group card ── */
+.grp-card {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.2s;
+}
+.grp-card.open {
+  border-color: #a5b4fc;
+}
+
+.grp-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.grp-card-header:hover {
+  background: #fafafa;
+}
+
+.grp-card-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.grp-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #6366f1, #10b981);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.grp-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.grp-meta {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+.grp-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.grp-btn-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 13px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(99, 102, 241, 0.25);
+  background: #f5f3ff;
+  color: #6366f1;
+  font-family: "Outfit", sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.grp-btn-share:hover {
+  background: #ede9fe;
+  border-color: rgba(99, 102, 241, 0.5);
+}
+.grp-btn-share svg {
+  width: 13px;
+  height: 13px;
+}
+
+.grp-btn-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 13px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(16, 185, 129, 0.25);
+  background: #f0fdf4;
+  color: #059669;
+  font-family: "Outfit", sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.grp-btn-add:hover {
+  background: #dcfce7;
+  border-color: rgba(16, 185, 129, 0.5);
+}
+.grp-btn-add svg {
+  width: 13px;
+  height: 13px;
+}
+
+.grp-btn-delete {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(220, 38, 38, 0.2);
+  background: #fff5f5;
+  color: #dc2626;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s;
+  flex-shrink: 0;
+}
+.grp-btn-delete:hover {
+  background: #fee2e2;
+  border-color: rgba(220, 38, 38, 0.5);
+}
+.grp-btn-delete svg {
+  width: 14px;
+  height: 14px;
+}
+
+.grp-chevron {
+  width: 18px;
+  height: 18px;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.grp-chevron svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ── Members section ── */
+.grp-members {
+  border-top: 1px solid #f3f4f6;
+  padding: 16px 20px;
+  background: #fafafa;
+}
+
+.grp-members-empty {
+  font-size: 13px;
+  color: #9ca3af;
+  text-align: center;
+  padding: 16px 0;
+}
+
+.grp-members-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.grp-members-table th {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.grp-members-table td {
+  padding: 10px;
+  font-size: 13px;
+  color: #374151;
+  vertical-align: middle;
+  border-bottom: 1px solid #f3f4f6;
+}
+.grp-members-table tr:last-child td {
+  border-bottom: none;
+}
+
+.grp-member-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.grp-member-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #10b981);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.grp-member-email {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.grp-remove-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #dc2626;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  float: right;
+}
+.grp-remove-btn:hover {
+  background: #fee2e2;
+  border-color: rgba(220, 38, 38, 0.4);
+}
+.grp-remove-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* ── Modals ── */
+.grp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fmOverlayIn 0.2s ease;
+}
+
+.grp-modal {
+  background: #fff;
+  border-radius: 18px;
+  padding: 28px 32px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+  animation: fmModalIn 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.grp-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.grp-modal-header h3 {
+  font-family: "Playfair Display", serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+.grp-modal-header em {
+  color: #6366f1;
+  font-style: normal;
+}
+
+.grp-modal-sub {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 14px;
+}
+
+/* ── Students list (add members modal) ── */
+.grp-students-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.grp-student-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  user-select: none;
+}
+.grp-student-item:hover:not(.already-in) {
+  background: #f5f3ff;
+}
+.grp-student-item.selected {
+  background: rgba(99, 102, 241, 0.06);
+}
+.grp-student-item.already-in {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.grp-student-item input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: #6366f1;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.grp-student-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.grp-student-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #111827;
+}
+.grp-student-email {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.grp-already-badge {
+  font-size: 11px;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Logout modal (kept from original) ── */
+.logout-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.logout-modal {
+  background: #fff;
+  border-radius: 18px;
+  padding: 36px 32px;
+  max-width: 380px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+  animation: fmModalIn 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.logout-modal-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fee2e2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  color: #dc2626;
+}
+.logout-modal-icon svg {
+  width: 24px;
+  height: 24px;
+}
+.logout-modal h3 {
+  font-family: "Playfair Display", serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px;
+}
+.logout-modal p {
+  font-size: 13.5px;
+  color: #6b7280;
+  margin: 0 0 24px;
+}
+.logout-actions {
+  display: flex;
+  gap: 10px;
+}
+.btn-cancel {
+  flex: 1;
+  height: 44px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  font-family: "Outfit", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-cancel:hover {
+  background: #f9fafb;
+}
+.btn-confirm {
+  flex: 1;
+  height: 44px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  color: #fff;
+  font-family: "Outfit", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);
+  transition:
+    opacity 0.2s,
+    transform 0.15s;
+}
+.btn-confirm:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.btn-confirm:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn-confirm svg {
+  width: 15px;
+  height: 15px;
+}

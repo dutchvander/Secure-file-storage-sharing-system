@@ -387,6 +387,20 @@ const Ico = {
       <circle cx="12" cy="12" r="3" />
     </svg>
   ),
+  /* ── أيقونة الفيروس ── */
+  Virus: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+    </svg>
+  ),
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -441,7 +455,9 @@ const ROLES_FOR = {
   ],
 };
 
-/* ══ Action META — كل العمليات الممكنة ══ */
+/* ══════════════════════════════════════════════════════════════
+   ACTION META — كل العمليات الممكنة (قديمة + جديدة)
+══════════════════════════════════════════════════════════════ */
 const ACTION_META = {
   /* ── File actions ── */
   upload_file: {
@@ -474,6 +490,27 @@ const ACTION_META = {
     bg: "rgba(107,114,128,.08)",
     icon: <Ico.XCircle />,
   },
+
+  /* ── Security actions (جديدة) ── */
+  scan_file: {
+    label: "Malware Scan",
+    color: "#6366f1",
+    bg: "rgba(99,102,241,.08)",
+    icon: <Ico.ShieldCheck />,
+  },
+  scan_infected: {
+    label: "Virus Blocked",
+    color: "#dc2626",
+    bg: "rgba(220,38,38,.12)",
+    icon: <Ico.Virus />,
+  },
+  unauthorized_share_attempt: {
+    label: "Unauthorized Share",
+    color: "#b45309",
+    bg: "rgba(180,83,9,.1)",
+    icon: <Ico.Ban />,
+  },
+
   /* ── Auth actions ── */
   login: {
     label: "Login",
@@ -505,7 +542,8 @@ const ACTION_META = {
     bg: "rgba(180,83,9,.08)",
     icon: <Ico.Ban />,
   },
-  /* ── fallback ── */
+
+  /* ── Fallback UPPERCASE (للسجلات القديمة) ── */
   LOGIN: {
     label: "Login",
     color: "#0ea5e9",
@@ -540,7 +578,7 @@ const getActionMeta = (action) =>
     icon: <Ico.FileText />,
   };
 
-/* ── فلاتر الـ Logs ── */
+/* ── فلاتر الـ Logs — تشمل الجديدة ── */
 const ACTION_FILTERS = [
   { key: "all", label: "All" },
   /* Auth */
@@ -555,6 +593,10 @@ const ACTION_FILTERS = [
   { key: "delete_file", label: "Delete" },
   { key: "share_file", label: "Share" },
   { key: "revoke_share", label: "Revoke" },
+  /* Security ← جديدة */
+  { key: "scan_file", label: "Scan" },
+  { key: "scan_infected", label: "Virus" },
+  { key: "unauthorized_share_attempt", label: "Unauth. Share" },
 ];
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1065,6 +1107,7 @@ function UsersTab({ users, viewerRole, onDelete, onUpdate }) {
 
 /* ═══════════════════════════════════════════════════════════════
    AUDIT LOGS TAB
+   يتصل بـ /api/admin/audit-logs (paginated من AuditLogController)
 ═══════════════════════════════════════════════════════════════ */
 function LogsTab() {
   const [logs, setLogs] = useState([]);
@@ -1084,7 +1127,8 @@ function LogsTab() {
       if (act !== "all") params.append("action", act);
       if (q.trim()) params.append("search", q.trim());
 
-      const res = await fetch(`${API}/admin/logs?${params}`, {
+      /* ← /admin/audit-logs (يتطابق مع api.php) */
+      const res = await fetch(`${API}/admin/audit-logs?${params}`, {
         headers: authHeaders(),
       });
       if (!res.ok) throw new Error("Failed to fetch logs");
@@ -1337,6 +1381,9 @@ function LogsTab() {
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   LOGOUT DIALOG
+═══════════════════════════════════════════════════════════════ */
 function LogoutDialog({ onCancel, onConfirm, loading }) {
   return (
     <div className="ad-modal-overlay" onClick={onCancel}>
@@ -1414,7 +1461,7 @@ export default function AdminPanel({ onLogout }) {
         }
         return r.json();
       })
-      .then((data) => setUsers(data?.data ?? []))
+      .then((data) => setUsers(data?.users ?? data?.data ?? []))
       .catch(() => setError("Failed to load users."))
       .finally(() => setLoading(false));
   }, []);

@@ -22,13 +22,15 @@ class AuditLogController extends Controller
             $query->where('user_id', $request->user_id);
         }
 
-        /* ── بحث بالـ IP ── */
+        /* ── بحث بالاسم أو الإيميل أو IP ── */
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('ip_address', 'like', "%{$search}%")
-                  ->orWhereHas('user', fn($u) => $u->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%"));
+                  ->orWhereHas('user', fn($u) =>
+                      $u->where('name',  'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                  );
             });
         }
 
