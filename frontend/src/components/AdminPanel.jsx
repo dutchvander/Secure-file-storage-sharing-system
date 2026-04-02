@@ -441,6 +441,7 @@ const NAV = [
   { key: "overview", label: "Overview", icon: <Ico.LayoutDashboard /> },
   { key: "users", label: "Users", icon: <Ico.Users /> },
   { key: "logs", label: "Audit Logs", icon: <Ico.FileText /> },
+  { key: "attacks", label: "Attack Logs", icon: <Ico.AlertOctagon /> },
 ];
 
 const ROLES_FOR = {
@@ -1417,6 +1418,494 @@ function LogoutDialog({ onCancel, onConfirm, loading }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   ATTACKS TAB
+═══════════════════════════════════════════════════════════════ */
+const ATTACK_TYPE_FILTERS = [
+  { key: "all", label: "All Types" },
+  { key: "XSS", label: "XSS" },
+  { key: "SQLi", label: "SQLi" },
+  { key: "CMDi", label: "CMD Injection" },
+  { key: "PathTraversal", label: "Path Traversal" },
+  { key: "FileInclusion", label: "File Inclusion" },
+  { key: "Scanner", label: "Scanner / Bot" },
+];
+
+const STATUS_FILTERS = [
+  { key: "all", label: "All" },
+  { key: "blocked", label: "Blocked" },
+  { key: "allowed", label: "Allowed" },
+];
+
+const SOURCE_FILTERS = [
+  { key: "all", label: "All Sources" },
+  { key: "rules", label: "Rules" },
+  { key: "ai", label: "AI" },
+];
+
+const ATTACK_META = {
+  XSS: {
+    color: "#ef4444",
+    bg: "rgba(239,68,68,.08)",
+    icon: <Ico.AlertOctagon />,
+  },
+  SQLi: {
+    color: "#f59e0b",
+    bg: "rgba(245,158,11,.08)",
+    icon: <Ico.AlertTriangle />,
+  },
+  CMDi: { color: "#dc2626", bg: "rgba(220,38,38,.1)", icon: <Ico.Ban /> },
+  PathTraversal: {
+    color: "#b45309",
+    bg: "rgba(180,83,9,.08)",
+    icon: <Ico.FileText />,
+  },
+  FileInclusion: {
+    color: "#7c3aed",
+    bg: "rgba(124,58,237,.08)",
+    icon: <Ico.Eye />,
+  },
+  Scanner: {
+    color: "#6b7280",
+    bg: "rgba(107,114,128,.08)",
+    icon: <Ico.Search />,
+  },
+};
+const getAttackMeta = (type) =>
+  ATTACK_META[type] ?? {
+    color: "#6b7280",
+    bg: "rgba(107,114,128,.08)",
+    icon: <Ico.FileText />,
+  };
+
+function AttacksTab() {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [stats, setStats] = useState(null);
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch(`${API}/admin/attack-logs/stats`, {
+        headers: authHeaders(),
+      });
+      if (res.ok) setStats(await res.json());
+    } catch {}
+  };
+
+  const fetchLogs = async (
+    p = 1,
+    type = typeFilter,
+    status = statusFilter,
+    source = sourceFilter,
+    q = search,
+  ) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({ page: p });
+      if (type !== "all") params.append("type", type);
+      if (status !== "all") params.append("status", status);
+      if (source !== "all") params.append("source", source);
+      if (q.trim()) params.append("search", q.trim());
+
+      const res = await fetch(`${API}/admin/attack-logs?${params}`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to fetch attack logs");
+      const data = await res.json();
+      setLogs(data.logs ?? []);
+      setTotalPages(data.pages ?? 1);
+      setTotal(data.total ?? 0);
+      setPage(data.page ?? 1);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+    fetchLogs();
+  }, []);
+
+  const handleSearch = (e) => {
+    setSearch(e.target.value);
+    fetchLogs(1, typeFilter, statusFilter, sourceFilter, e.target.value);
+  };
+
+  return (
+    <div className="ad-table-section">
+      {/* ── Stats mini-row ── */}
+      {stats && (
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            padding: "18px 28px",
+            borderBottom: "1px solid #f3f4f6",
+            flexWrap: "wrap",
+          }}
+        >
+          {[
+            { label: "Total", value: stats.total, color: "#6366f1" },
+            { label: "Blocked", value: stats.blocked, color: "#ef4444" },
+            { label: "XSS", value: stats.xss, color: "#dc2626" },
+            { label: "SQLi", value: stats.sqli, color: "#f59e0b" },
+            { label: "CMD Injection", value: stats.cmdi, color: "#dc2626" },
+            {
+              label: "Path Traversal",
+              value: stats.path_traversal,
+              color: "#b45309",
+            },
+            {
+              label: "File Inclusion",
+              value: stats.file_inclusion,
+              color: "#7c3aed",
+            },
+            { label: "Scanner", value: stats.scanner, color: "#6b7280" },
+          ].map((s) => (
+            <div
+              key={s.label}
+              style={{
+                background: "#f9fafb",
+                border: "1.5px solid #e5e7eb",
+                borderRadius: 10,
+                padding: "10px 18px",
+                textAlign: "center",
+                minWidth: 80,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: s.color,
+                  fontFamily: "'Playfair Display',serif",
+                }}
+              >
+                {s.value}
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "#9ca3af",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                }}
+              >
+                {s.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="ad-table-header">
+        <div>
+          <div className="ad-table-title">Attack Logs</div>
+          <div className="ad-table-count">
+            {total} attack{total !== 1 ? "s" : ""} recorded
+          </div>
+        </div>
+        <button
+          className="ad-refresh-btn"
+          onClick={() => {
+            fetchStats();
+            fetchLogs(page);
+          }}
+          disabled={loading}
+        >
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 14, height: 14, display: "flex" }}>
+              <Ico.RefreshCw />
+            </span>
+            Refresh
+          </span>
+        </button>
+      </div>
+
+      {/* ── Filters ── */}
+      <div className="ad-table-toolbar" style={{ flexWrap: "wrap", gap: 8 }}>
+        <div className="ad-search-wrap">
+          <span className="ad-search-icon">
+            <Ico.Search />
+          </span>
+          <input
+            className="ad-search"
+            placeholder="Search by IP, URL or payload…"
+            value={search}
+            onChange={handleSearch}
+          />
+        </div>
+        <div className="ad-filter-pills">
+          {ATTACK_TYPE_FILTERS.map((f) => (
+            <button
+              key={f.key}
+              className={`ad-pill ${typeFilter === f.key ? "active" : ""}`}
+              onClick={() => {
+                setTypeFilter(f.key);
+                fetchLogs(1, f.key, statusFilter, sourceFilter, search);
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="ad-filter-pills">
+          {STATUS_FILTERS.map((f) => (
+            <button
+              key={f.key}
+              className={`ad-pill ${statusFilter === f.key ? "active" : ""}`}
+              onClick={() => {
+                setStatusFilter(f.key);
+                fetchLogs(1, typeFilter, f.key, sourceFilter, search);
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="ad-filter-pills">
+          {SOURCE_FILTERS.map((f) => (
+            <button
+              key={f.key}
+              className={`ad-pill ${sourceFilter === f.key ? "active" : ""}`}
+              onClick={() => {
+                setSourceFilter(f.key);
+                fetchLogs(1, typeFilter, statusFilter, f.key, search);
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Table ── */}
+      <div className="ad-table-wrap">
+        {loading ? (
+          <div className="ad-loading" style={{ padding: "48px" }}>
+            <span className="ad-spinner dark" />
+            <p>Loading attack logs…</p>
+          </div>
+        ) : error ? (
+          <div className="ad-error-box" style={{ margin: "24px" }}>
+            {error}
+          </div>
+        ) : logs.length === 0 ? (
+          <div className="ad-table-empty" style={{ padding: "56px" }}>
+            <Ico.Shield />
+            <p>No attacks recorded.</p>
+          </div>
+        ) : (
+          <table className="ad-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>IP Address</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Source</th>
+                <th>Score</th>
+                <th>Payload</th>
+                <th>Date & Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((log, idx) => {
+                const meta = getAttackMeta(log.type);
+                return (
+                  <tr key={log.id}>
+                    <td style={{ color: "#9ca3af", fontSize: 12 }}>
+                      {(page - 1) * 15 + idx + 1}
+                    </td>
+                    <td>
+                      <code className="ad-log-ip">{log.ip ?? "—"}</code>
+                    </td>
+                    <td>
+                      <span
+                        className="ad-log-action-badge"
+                        style={{
+                          background: meta.bg,
+                          color: meta.color,
+                          borderColor: meta.color + "33",
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 12,
+                            height: 12,
+                            display: "flex",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {meta.icon}
+                        </span>
+                        {log.type}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 5,
+                          padding: "3px 10px",
+                          borderRadius: 100,
+                          fontSize: 11.5,
+                          fontWeight: 600,
+                          background:
+                            log.status === "blocked"
+                              ? "rgba(239,68,68,.08)"
+                              : "rgba(16,185,129,.08)",
+                          color:
+                            log.status === "blocked" ? "#dc2626" : "#059669",
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 7,
+                            height: 7,
+                            borderRadius: "50%",
+                            background: "currentColor",
+                          }}
+                        />
+                        {log.status === "blocked" ? "Blocked" : "Allowed"}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          padding: "2px 8px",
+                          borderRadius: 6,
+                          background:
+                            log.source === "ai"
+                              ? "rgba(139,92,246,.08)"
+                              : "rgba(14,165,233,.08)",
+                          color: log.source === "ai" ? "#7c3aed" : "#0284c7",
+                        }}
+                      >
+                        {log.source === "ai" ? "AI" : "Rules"}
+                      </span>
+                    </td>
+                    <td
+                      style={{
+                        fontSize: 13,
+                        color:
+                          log.score >= 80
+                            ? "#dc2626"
+                            : log.score >= 50
+                              ? "#f59e0b"
+                              : "#6b7280",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {log.score ?? "—"}
+                    </td>
+                    <td
+                      style={{
+                        fontSize: 12,
+                        color: "#374151",
+                        maxWidth: 200,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <code
+                        style={{
+                          background: "#f3f4f6",
+                          padding: "2px 6px",
+                          borderRadius: 4,
+                          fontSize: 11,
+                        }}
+                      >
+                        {log.payload ?? "—"}
+                      </code>
+                    </td>
+                    <td
+                      style={{
+                        color: "#9ca3af",
+                        fontSize: 12.5,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {log.created_at
+                        ? new Date(log.created_at).toLocaleString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* ── Pagination ── */}
+      {totalPages > 1 && !loading && (
+        <div className="ad-pagination">
+          <span className="ad-page-info">
+            Page {page} of {totalPages} · {total} total
+          </span>
+          <div className="ad-page-btns">
+            <button
+              className="ad-page-btn"
+              onClick={() => fetchLogs(page - 1)}
+              disabled={page === 1}
+            >
+              <Ico.ChevronLeft />
+            </button>
+            {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+              const n =
+                totalPages <= 7
+                  ? i + 1
+                  : page <= 4
+                    ? i + 1
+                    : page >= totalPages - 3
+                      ? totalPages - 6 + i
+                      : page - 3 + i;
+              return (
+                <button
+                  key={n}
+                  className={`ad-page-btn${page === n ? " active" : ""}`}
+                  onClick={() => fetchLogs(n)}
+                >
+                  {n}
+                </button>
+              );
+            })}
+            <button
+              className="ad-page-btn"
+              onClick={() => fetchLogs(page + 1)}
+              disabled={page === totalPages}
+            >
+              <Ico.ChevronRight />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+/* ═══════════════════════════════════════════════════════════════
    MAIN ADMIN PANEL
 ═══════════════════════════════════════════════════════════════ */
 export default function AdminPanel({ onLogout }) {
@@ -1538,6 +2027,10 @@ export default function AdminPanel({ onLogout }) {
       sub: "View, search, update roles and remove users.",
     },
     logs: { title: "Audit Logs", sub: "Full record of all system actions." },
+    attacks: {
+      title: "Attack Logs",
+      sub: "Blocked XSS, SQLi and anomaly detection.",
+    }, // ← جديد
   };
 
   return (
@@ -1628,6 +2121,7 @@ export default function AdminPanel({ onLogout }) {
                 />
               )}
               {active === "logs" && <LogsTab />}
+              {active === "attacks" && <AttacksTab />}
             </>
           )}
         </div>

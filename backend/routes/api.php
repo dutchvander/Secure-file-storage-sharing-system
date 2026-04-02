@@ -6,6 +6,8 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AttackLogController;
+
 
 /* ── Public ── */
 Route::post('register', [UserController::class, 'register']);
@@ -57,6 +59,9 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::put('/users/{id}',    [UserController::class, 'updateRole']);
     Route::get('/audit-logs',    [AuditLogController::class, 'index']);
     Route::get('/logs',          [AuditLogController::class, 'index']);
+
+    Route::get('/attack-logs',        [AttackLogController::class, 'index']);
+    Route::get('/attack-logs/stats',  [AttackLogController::class, 'stats']);
 });
 
 

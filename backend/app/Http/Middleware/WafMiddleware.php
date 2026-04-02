@@ -6,91 +6,285 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class WafMiddleware
 {
+    /* ═══════════════════════════════════════════════════════
+       CONFIG
+    ═══════════════════════════════════════════════════════ */
+    private const RATE_LIMIT        = 60;   // max requests
+    private const RATE_WINDOW       = 60;   // per seconds
+    private const BLOCK_DURATION    = 300;  // block IP for 5 min after abuse
+    private const MAX_PAYLOAD_LOG   = 500;  // chars saved to DB
+
+    private const WEIGHTS = [
+        'SQLi'          => 9,
+        'XSS'           => 7,
+        'CMDi'          => 8,
+        'PathTraversal' => 8,
+        'FileInclusion' => 9,
+        'Scanner'       => 3,
+        'SSTI'          => 9,
+        'XXE'           => 8,
+    ];
+
+    private const PATTERNS = [
+
+        'SQLi' => [
+            '/\bUNI(?:\s|\/\*.*?\*\/)*ON\b.*\bSEL(?:\s|\/\*.*?\*\/)*ECT\b/i',
+            '/\bSEL(?:\s|\/\*.*?\*\/)*ECT\b.*\bFR(?:\s|\/\*.*?\*\/)*OM\b/i',
+            '/\b(DROP|TRUNCATE)\b\s+\b(TABLE|DATABASE)\b/i',
+            '/\bOR\b\s+[\'\"]?\d+[\'\"]?\s*=\s*[\'\"]?\d+[\'\"]?/i',
+            '/\bAND\b\s+[\'\"]?\d+[\'\"]?\s*=\s*[\'\"]?\d+[\'\"]?/i',
+            '/\bINSERT\b\s+\bINTO\b/i',
+            '/\bINFORMATION_SCHEMA\b/i',
+            '/\bSLEEP\s*\(\s*\d+\s*\)/i',          // time-based blind
+            '/\bBENCHMARK\s*\(/i',
+            '/\bLOAD_FILE\s*\(/i',
+            '/\bINTO\s+(OUT|DUMP)FILE\b/i',
+        ],
+
+        'XSS' => [
+            '/<script[\s>]/i',
+            '/javascript\s*:/i',
+            '/on\w+\s*=\s*["\']?[^"\']*["\']?/i',  // onerror= onclick= etc
+            '/<\s*iframe/i',
+            '/<\s*object/i',
+            '/<\s*embed/i',
+            '/expression\s*\(/i',
+            '/vbscript\s*:/i',
+            '/<\s*svg.*?on\w+\s*=/i',
+            '/document\s*\.\s*cookie/i',
+            '/document\s*\.\s*write\s*\(/i',
+            '/window\s*\.\s*location/i',
+        ],
+
+        'CMDi' => [
+            '/[;&|`]\s*(ls|cat|whoami|id|uname|pwd|wget|curl|bash|sh|python|perl|ruby|nc|ncat)\b/i',
+            '/\$\s*\(.*\)/i',                        // $() command substitution
+            '/`[^`]+`/',                              // backtick execution
+            '/\|\s*\w+/i',
+        ],
+
+        'PathTraversal' => [
+            '/\.\.[\\/]/',
+            '/\.\.%2[fF]/',
+            '/\.\.%5[cC]/',
+            '/%2e%2e[\\/]/i',
+            '/\x00/',                                // null byte
+        ],
+
+        'FileInclusion' => [
+            '/php:\/\/(?!input)/i',                  // php:// except php://input
+            '/file:\/\//i',
+            '/data:text\/html/i',
+            '/zip:\/\//i',
+            '/phar:\/\//i',
+            '/expect:\/\//i',
+        ],
+
+        'SSTI' => [                                   // Server-Side Template Injection
+            '/\{\{.*\}\}/',
+            '/\{%.*%\}/',
+            '/\$\{.*\}/',
+            '/#\{.*\}/',
+        ],
+
+        'XXE' => [                                    // XML External Entity
+            '/<!ENTITY/i',
+            '/SYSTEM\s+["\'].*["\']>/i',
+            '/<!\[CDATA\[/i',
+        ],
+
+        'Scanner' => [
+            '/\b(sqlmap|nikto|nmap|masscan|dirbuster|gobuster|wfuzz|hydra|burpsuite)\b/i',
+            '/\b(acunetix|nessus|openvas|w3af|skipfish)\b/i',
+        ],
+    ];
+
+    /* ═══════════════════════════════════════════════════════
+       HANDLE
+    ═══════════════════════════════════════════════════════ */
     public function handle(Request $request, Closure $next): Response
     {
-        // 🔍 جمع كل مكونات الطلب
-        $input = json_encode([
-            'body' => $request->all(),
-            'query' => $request->query(),
-            'headers' => $request->headers->all(),
-            'raw' => $request->getContent()
-        ]);
+        $ip = $request->ip();
 
-        // 🔧 Normalization
-        $input = urldecode($input);
-        $input = strtolower($input);
+        // 1) هل الـ IP محظور مسبقاً؟
+        if (Cache::has("waf_blocked_{$ip}")) {
+            return $this->blocked($request, 'IP temporarily blocked due to previous attack.');
+        }
 
-        // 🚨 Patterns للهجمات
-  $patterns = [
+        // 2) Rate Limiting
+        if ($this->isRateLimited($ip)) {
+            Cache::put("waf_blocked_{$ip}", true, self::BLOCK_DURATION);
+            $this->saveLog($ip, 'RateLimit', 'Too many requests', $request, 10, 'blocked');
+            return $this->blocked($request, 'Too many requests. Try again later.');
+        }
 
-    // XSS
-    'XSS' => '/(<script.*?>|javascript:|onerror=|onload=|<img.*?onerror=.*?>)/i',
+        // 3) بناء الـ payload للفحص
+        $payload = $this->buildPayload($request);
 
-    // SQL Injection
-    'SQLi' => '/(\bUNION\b.*\bSELECT\b|\bSELECT\b.*\bFROM\b|\bDROP\b|\bINSERT\b|\bDELETE\b|\bOR\b\s+\d+=\d+)/i',
+        // 4) Normalize (متعدد المراحل)
+        $normalized = $this->normalize($payload);
 
-    // Command Injection
-    'CMDi' => '/(;|\||&&)\s*(ls|cat|whoami|rm|pwd)/i',
+        // 5) فحص الأنماط
+        $score          = 0;
+        $detectedTypes  = [];
 
-    // Path Traversal
-    'PathTraversal' => '/(\.\.\/|\.\.\\\\)/i',
-
-    // File Inclusion
-    'FileInclusion' => '/(php:\/\/|file:\/\/|http:\/\/|https:\/\/)/i',
-
-    // Scanner / Bots
-    'Scanner' => '/(sqlmap|nikto|curl|wget|python)/i',
-
-];
-
-        $score = 0;
-        $detectedTypes = []; // ✅ مصفوفة لتخزين كل أنواع الهجوم
-        $weights = [
-    'SQLi' => 9,
-    'XSS' => 7,
-    'CMDi' => 8,
-    'PathTraversal' => 8,
-    'FileInclusion' => 9,
-    'Scanner' => 3
-];
-        // 🧠 Scoring / Detection
-        foreach ($patterns as $type => $pattern) {
-            if (preg_match($pattern, $input)) {
-                $score += $weights[$type] ?? 5;
-                $detectedTypes[] = $type; // ✅ اضف النوع للمصفوفة
+        foreach (self::PATTERNS as $type => $patterns) {
+            foreach ($patterns as $pattern) {
+                if (preg_match($pattern, $normalized)) {
+                    $score += self::WEIGHTS[$type] ?? 5;
+                    $detectedTypes[] = $type;
+                    break; // نوع واحد يكفي للإضافة للقائمة
+                }
             }
         }
 
-        // 🚫 إذا تم الكشف عن أي هجوم → block + log
- if (!empty($detectedTypes)) {
-    foreach ($detectedTypes as $type) {
-        DB::table('attack_logs')->insert([
-            'ip' => $request->ip(),
-            'type' => $type,
-            'payload' => $input,
-            'method' => $request->method(),
-            'url' => $request->fullUrl(),
-            'user_agent' => $request->userAgent(),
-            'source' => 'rules',
-            'status' => 'blocked',
-            'score' => $score,
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
+        // 6) إذا كُشف هجوم
+        if (!empty($detectedTypes)) {
+            $shortPayload = mb_substr($payload, 0, self::MAX_PAYLOAD_LOG);
 
-        // سجل log لتأكيد التنفيذ لكل نوع
-        logger("WAF blocked: type=$type, score=$score");
+            foreach (array_unique($detectedTypes) as $type) {
+                $this->saveLog($ip, $type, $shortPayload, $request, $score, 'blocked');
+            }
+
+            // إذا كان الـ score عالياً جداً → حظر مؤقت للـ IP
+            if ($score >= 15) {
+                Cache::put("waf_blocked_{$ip}", true, self::BLOCK_DURATION);
+            }
+
+            return response()->json([
+                'message' => 'Request blocked by security filter "WAF" . 🚫',
+            ], 403);
+        }
+
+        return $next($request);
     }
 
-    return response()->json([
-        'message' => 'Blocked by WAF 🚫'
-    ], 403);
-}
+    /* ═══════════════════════════════════════════════════════
+       NORMALIZE — متعدد المراحل لمقاومة التشويش
+    ═══════════════════════════════════════════════════════ */
+    private function normalize(string $input): string
+    {
+        // Double URL decode
+        $input = urldecode(urldecode($input));
 
-        // إذا لا يوجد هجوم → استمر بالطلب
-        return $next($request);
+        // HTML entity decode
+        $input = html_entity_decode($input, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // إزالة null bytes
+        $input = str_replace("\x00", '', $input);
+
+        // lowercase
+        $input = strtolower($input);
+
+        // إزالة SQL comments التي تُستخدم للتهرب
+        $input = preg_replace('/\/\*.*?\*\//s', ' ', $input);
+        $input = preg_replace('/--[^\n]*/', ' ', $input);
+        $input = preg_replace('/#[^\n]*/', ' ', $input);
+
+        // تطبيع المسافات
+        $input = preg_replace('/\s+/', ' ', $input);
+
+        // إزالة hex encoding الشائع في XSS
+        $input = preg_replace_callback('/\\\\x([0-9a-f]{2})/i', fn($m) => chr(hexdec($m[1])), $input);
+
+        // إزالة unicode escape
+        $input = preg_replace_callback('/\\\\u([0-9a-f]{4})/i', fn($m) => mb_chr(hexdec($m[1])), $input);
+
+        return $input;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       BUILD PAYLOAD — يجمع الأجزاء المهمة فقط
+    ═══════════════════════════════════════════════════════ */
+    private function buildPayload(Request $request): string
+    {
+        $parts = [];
+
+        // Query string
+        if ($qs = $request->getQueryString()) {
+            $parts[] = $qs;
+        }
+
+        // Body (JSON أو form)
+        $body = $request->getContent();
+        if (!empty($body)) {
+            $parts[] = mb_substr($body, 0, 2000); // حد أقصى 2KB من الـ body
+        }
+
+        // Headers المهمة فقط
+        $suspiciousHeaders = ['user-agent', 'referer', 'x-forwarded-for', 'x-real-ip'];
+        foreach ($suspiciousHeaders as $h) {
+            if ($val = $request->header($h)) {
+                $parts[] = $val;
+            }
+        }
+
+        // URL path
+        $parts[] = $request->path();
+
+        return implode(' ', $parts);
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       RATE LIMITING — بـ Cache
+    ═══════════════════════════════════════════════════════ */
+    private function isRateLimited(string $ip): bool
+    {
+        $key   = "waf_rate_{$ip}";
+        $count = (int) Cache::get($key, 0);
+
+        if ($count === 0) {
+            Cache::put($key, 1, self::RATE_WINDOW);
+            return false;
+        }
+
+        if ($count >= self::RATE_LIMIT) {
+            return true;
+        }
+
+        Cache::increment($key);
+        return false;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       SAVE LOG
+    ═══════════════════════════════════════════════════════ */
+    private function saveLog(
+        string  $ip,
+        string  $type,
+        string  $payload,
+        Request $request,
+        int     $score,
+        string  $status
+    ): void {
+        try {
+            DB::table('attack_logs')->insert([
+                'ip'         => $ip,
+                'type'       => $type,
+                'payload'    => $payload,
+                'method'     => $request->method(),
+                'url'        => mb_substr($request->fullUrl(), 0, 500),
+                'user_agent' => mb_substr($request->userAgent() ?? '', 0, 300),
+                'source'     => 'rules',
+                'status'     => $status,
+                'score'      => $score,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Throwable) {
+            // لا نكسر الطلب إذا فشل الـ logging
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       BLOCKED RESPONSE
+    ═══════════════════════════════════════════════════════ */
+    private function blocked(Request $request, string $msg): Response
+    {
+        return response()->json(['message' => $msg], 403);
     }
 }
