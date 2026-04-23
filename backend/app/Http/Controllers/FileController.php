@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Models\Alert;
 
 class FileController extends Controller
 {
@@ -96,7 +97,11 @@ class FileController extends Controller
         ]);
 
         $this->log('upload_file', $file->id, $request);
-        AuditLog::create(['user_id' => auth()->id(), 'action' => 'scan_file', 'file_id' => $file->id,
+        /* =========================
+             CORRELATION ENGINE HOOK
+            ========================= */
+            $this->triggerUploadAnalysis($file->user_id, $request->ip());
+            AuditLog::create(['user_id' => auth()->id(), 'action' => 'scan_file', 'file_id' => $file->id,
             'ip_address' => $request->ip(), 'details' => json_encode(['result' => 'safe'])]);
 
         return response()->json(['message' => 'File uploaded, scanned, and encrypted successfully.', 'file' => $this->formatFile($file)], 201);
@@ -337,7 +342,21 @@ class FileController extends Controller
         $response = fgets($socket);
         fclose($socket);
         if (str_contains($response, 'OK'))    return 'safe';
-        if (str_contains($response, 'FOUND')) return 'infected';
+if (str_contains($response, 'FOUND')) {
+    Alert::create([
+        'user_id' => auth()->id(),
+        'type' => 'malware_detected',
+        'severity' => 'critical',
+        'message' => 'Malware detected during file upload scan',
+        'ip' => request()->ip(),
+        'context' => json_encode([
+            'file_scan' => 'clamav',
+            'result' => $response
+        ])
+    ]);
+
+    return 'infected';
+}
         throw new \Exception("Unexpected ClamAV response: $response");
     }
 
@@ -363,4 +382,47 @@ class FileController extends Controller
             'created_at' => $file->created_at, 'owner' => $file->owner?->name,
         ];
     }
+    /* =========================
+   CORRELATION ENGINE HOOK
+========================= */
+private function triggerUploadAnalysis($userId, $ip)
+{
+    // مثال بسيط: تحليل سريع + إنشاء Alert
+
+    $recentUploads = File::where('user_id', $userId)
+        ->where('created_at', '>=', now()->subMinutes(10))
+        ->count();
+
+    if ($recentUploads >= 5) {
+        Alert::create([
+            'user_id' => $userId,
+            'type' => 'mass_upload',
+            'severity' => 'medium',
+            'message' => 'User uploaded many files in short time',
+            'ip' => $ip,
+            'context' => json_encode([
+                'uploads_last_10min' => $recentUploads
+            ])
+        ]);
+    }
+
+    // IP suspicious behavior
+ $ipUploads = AuditLog::where('ip_address', $ip)
+    ->where('action', 'upload_file')
+    ->where('created_at', '>=', now()->subMinutes(10))
+    ->count();
+
+    if ($ipUploads >= 10) {
+        Alert::create([
+            'user_id' => $userId,
+            'type' => 'suspicious_ip_activity',
+            'severity' => 'high',
+            'message' => 'Abnormal upload activity detected from IP',
+            'ip' => $ip,
+            'context' => json_encode([
+                'risk' => 'high_upload_rate'
+            ])
+        ]);
+    }
+}
 }

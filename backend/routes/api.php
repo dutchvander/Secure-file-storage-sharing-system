@@ -7,6 +7,7 @@ use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AttackLogController;
+use App\Http\Controllers\AdminController;
 
 
 /* ── Public ── */
@@ -62,6 +63,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 
     Route::get('/attack-logs',        [AttackLogController::class, 'index']);
     Route::get('/attack-logs/stats',  [AttackLogController::class, 'stats']);
+    // Alerts
+    Route::get('/alerts', [AdminController::class, 'getAlerts']); // ✅
 });
 
 

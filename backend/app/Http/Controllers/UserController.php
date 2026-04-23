@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use App\Services\SecurityAnalyzerService; // 🔥 مهم
 
 class UserController extends Controller
 {
@@ -42,8 +43,11 @@ class UserController extends Controller
             'role'     => 'student',
         ]);
 
-        /* ── تسجيل عملية التسجيل ── */
         $this->log('register', $user->id, $request);
+
+        // 🔥 تحليل سلوك
+        app(SecurityAnalyzerService::class)
+            ->analyze($user->id, $request->ip());
 
         return response()->json([
             'message' => 'User registered successfully',
@@ -63,58 +67,69 @@ class UserController extends Controller
 
         $key = 'login|' . Str::lower($request->email) . '|' . $request->ip();
 
+        // 🚫 BLOCKED
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
             $minutes = ceil($seconds / 60);
 
-            /* ── تسجيل محاولة محجوبة ── */
             $blocked = User::where('email', $request->email)->first();
+
             $this->log('login_blocked', $blocked?->id, $request, [
-                'email'              => $request->email,
+                'email' => $request->email,
                 'retry_after_seconds'=> $seconds,
             ]);
 
+            // 🔥 Analyzer
+            app(SecurityAnalyzerService::class)
+                ->analyze($blocked?->id, $request->ip());
+
             return response()->json([
-                'message'             => "Too many failed attempts. Please try again after {$minutes} minute(s).",
-                'retry_after_seconds' => $seconds,
-                'retry_after_minutes' => $minutes,
-                'locked'              => true,
+                'message' => "Too many failed attempts. Try after {$minutes} minute(s).",
+                'locked'  => true,
             ], 429);
         }
 
+        // ❌ FAILED LOGIN
         if (!Auth::attempt($request->only('email', 'password'))) {
             RateLimiter::hit($key, 3600);
 
             $attempts  = RateLimiter::attempts($key);
             $remaining = max(0, 5 - $attempts);
 
-            /* ── تسجيل فشل تسجيل الدخول ── */
             $failed = User::where('email', $request->email)->first();
+
             $this->log('login_failed', $failed?->id, $request, [
-                'email'              => $request->email,
+                'email' => $request->email,
                 'attempts_remaining' => $remaining,
             ]);
 
+            // 🔥 Analyzer
+            app(SecurityAnalyzerService::class)
+                ->analyze($failed?->id, $request->ip());
+
             return response()->json([
-                'message'            => 'Invalid email or password.',
-                'attempts_remaining' => $remaining,
-                'locked'             => $remaining === 0,
+                'message' => 'Invalid credentials',
+                'remaining' => $remaining,
             ], 401);
         }
 
+        // ✅ SUCCESS LOGIN
         RateLimiter::clear($key);
 
         $user  = User::where('email', $request->email)->firstOrFail();
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        /* ── تسجيل نجاح تسجيل الدخول ── */
         $this->log('login', $user->id, $request);
+
+        // 🔥 Analyzer
+        app(SecurityAnalyzerService::class)
+            ->analyze($user->id, $request->ip());
 
         return response()->json([
             'message' => 'Login successfully',
             'user'    => $user,
             'token'   => $token,
-        ], 200);
+        ]);
     }
 
     // ─────────────────────────────────────────
@@ -122,8 +137,11 @@ class UserController extends Controller
     // ─────────────────────────────────────────
     public function logout(Request $request)
     {
-        /* ── تسجيل تسجيل الخروج قبل حذف التوكن ── */
         $this->log('logout', auth()->id(), $request);
+
+        // 🔥 Analyzer
+        app(SecurityAnalyzerService::class)
+            ->analyze(auth()->id(), $request->ip());
 
         $request->user()->currentAccessToken()->delete();
 
@@ -133,15 +151,11 @@ class UserController extends Controller
     }
 
     // ─────────────────────────────────────────
-    // PROFILE
-    // ─────────────────────────────────────────
     public function profile()
     {
         return response()->json(['user' => auth()->user()]);
     }
 
-    // ─────────────────────────────────────────
-    // ADMIN — list all users
     // ─────────────────────────────────────────
     public function index()
     {
@@ -151,8 +165,6 @@ class UserController extends Controller
         ]);
     }
 
-    // ─────────────────────────────────────────
-    // ADMIN — delete user
     // ─────────────────────────────────────────
     public function destroy($id)
     {
@@ -168,8 +180,6 @@ class UserController extends Controller
     }
 
     // ─────────────────────────────────────────
-    // ADMIN — update role
-    // ─────────────────────────────────────────
     public function updateRole(Request $request, $id)
     {
         $authUser = auth()->user();
@@ -184,62 +194,47 @@ class UserController extends Controller
         }
 
         if ($authUser->role !== 'super_admin' && in_array($request->role, ['admin', 'super_admin'])) {
-            return response()->json(['message' => 'Only super admin can assign admin or super admin role'], 403);
-        }
-
-        if ($user->role === 'super_admin' && $authUser->role !== 'super_admin') {
-            return response()->json(['message' => 'You cannot modify a super admin'], 403);
+            return response()->json(['message' => 'Only super admin can assign admin'], 403);
         }
 
         $user->role = $request->role;
         $user->save();
 
         return response()->json([
-            'message' => 'User role updated successfully',
+            'message' => 'Role updated',
             'user'    => $user,
         ]);
     }
 
-    // ─────────────────────────────────────────
-    // SETTINGS — update name
     // ─────────────────────────────────────────
     public function updateName(Request $request)
     {
         $request->validate(['name' => 'required|string|min:2|max:255']);
 
-        $user       = auth()->user();
+        $user = auth()->user();
         $user->name = $request->name;
         $user->save();
 
-        return response()->json([
-            'message' => 'Name updated successfully',
-            'user'    => $user,
-        ]);
+        return response()->json(['message' => 'Updated']);
     }
 
-    // ─────────────────────────────────────────
-    // SETTINGS — update password
     // ─────────────────────────────────────────
     public function updatePassword(Request $request)
     {
         $request->validate([
-            'current_password' => 'required|string',
-            'password'         => 'required|string|min:8|confirmed',
+            'current_password' => 'required',
+            'password' => 'required|min:8|confirmed',
         ]);
 
         $user = auth()->user();
 
         if (!Hash::check($request->current_password, $user->password)) {
-            return response()->json(['message' => 'Current password is incorrect'], 422);
-        }
-
-        if (Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'New password must be different from the current password'], 422);
+            return response()->json(['message' => 'Wrong password'], 422);
         }
 
         $user->password = Hash::make($request->password);
         $user->save();
 
-        return response()->json(['message' => 'Password updated successfully']);
+        return response()->json(['message' => 'Password updated']);
     }
 }
