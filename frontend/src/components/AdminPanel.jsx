@@ -1,114 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import "../styles/admin.css";
-
-/* ═══════════════════════════════════════════════════════════════
-   ALERTS LIST COMPONENT (inline)
-═══════════════════════════════════════════════════════════════ */
-const severityColor = {
-  low:    { bg: "rgba(16,185,129,.08)",  color: "#059669",  label: "LOW"    },
-  medium: { bg: "rgba(245,158,11,.08)",  color: "#d97706",  label: "MEDIUM" },
-  high:   { bg: "rgba(239,68,68,.08)",   color: "#dc2626",  label: "HIGH"   },
-};
-
-function AlertsList({ alerts }) {
-  if (!alerts.length)
-    return (
-      <div className="ad-table-empty" style={{ padding: "56px" }}>
-        <Ico.ShieldCheck />
-        <p>No security alerts. All clear!</p>
-      </div>
-    );
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: "4px 0" }}>
-      {alerts.map((alert) => {
-        const sev = severityColor[alert.severity] ?? severityColor.medium;
-        return (
-          <div
-            key={alert.id}
-            style={{
-              background: "#fff",
-              border: "1.5px solid #e5e7eb",
-              borderLeft: `4px solid ${sev.color}`,
-              borderRadius: 12,
-              padding: "16px 20px",
-              boxShadow: "0 1px 4px rgba(0,0,0,.04)",
-              transition: "box-shadow .15s",
-            }}
-          >
-            {/* Top row */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>
-                {alert.type}
-              </span>
-              <span
-                style={{
-                  padding: "3px 10px",
-                  borderRadius: 100,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: "0.06em",
-                  background: sev.bg,
-                  color: sev.color,
-                  border: `1px solid ${sev.color}33`,
-                }}
-              >
-                {sev.label}
-              </span>
-            </div>
-
-            {/* Message */}
-            <p style={{ fontSize: 13.5, color: "#374151", marginBottom: 10, lineHeight: 1.55 }}>
-              {alert.message}
-            </p>
-
-            {/* Meta */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 18px", fontSize: 12, color: "#9ca3af" }}>
-              {alert.ip && (
-                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <span style={{ width: 12, height: 12, display: "flex" }}><Ico.Shield /></span>
-                  {alert.ip}
-                </span>
-              )}
-              {alert.user_id && (
-                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <span style={{ width: 12, height: 12, display: "flex" }}><Ico.Users /></span>
-                  User #{alert.user_id}
-                </span>
-              )}
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ width: 12, height: 12, display: "flex" }}><Ico.FileText /></span>
-                {new Date(alert.created_at).toLocaleString("en-GB", {
-                  day: "2-digit", month: "short", year: "numeric",
-                  hour: "2-digit", minute: "2-digit",
-                })}
-              </span>
-            </div>
-
-            {/* Context JSON */}
-            {alert.context && (
-              <pre
-                style={{
-                  marginTop: 12,
-                  background: "#f3f4f6",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 8,
-                  padding: "10px 12px",
-                  fontSize: 11,
-                  color: "#374151",
-                  overflowX: "auto",
-                  lineHeight: 1.6,
-                }}
-              >
-                {JSON.stringify(alert.context, null, 2)}
-              </pre>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+import AlertsList from "./AlertsList";
 
 /* ═══════════════════════════════════════════════════════════════
    ICONS
@@ -328,7 +220,7 @@ const NAV = [
   { key: "users",    label: "Users",          icon: <Ico.Users /> },
   { key: "logs",     label: "Audit Logs",     icon: <Ico.FileText /> },
   { key: "attacks",  label: "Attack Logs",    icon: <Ico.AlertOctagon /> },
-  { key: "alerts",   label: "Alerts",         icon: <Ico.BellAlert /> },  // ← NEW
+  { key: "alerts",   label: "Alerts",         icon: <Ico.BellAlert /> },
 ];
 
 const ROLES_FOR = {
@@ -384,19 +276,38 @@ const ACTION_FILTERS = [
 ];
 
 /* ═══════════════════════════════════════════════════════════════
-   TOAST
+   TOAST  ← MODIFICATION 3 : durée 5s + support type "danger"
 ═══════════════════════════════════════════════════════════════ */
 function Toast({ toast, onDone }) {
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(onDone, 3200);
+    // 5 secondes pour laisser l'admin lire l'IP et le type d'attaque
+    const t = setTimeout(onDone, 5000);
     return () => clearTimeout(t);
   }, [toast, onDone]);
+
   if (!toast) return null;
+
+  const isDanger = toast.type === "danger";
+
   return (
-    <div className={`ad-toast ${toast.type}`}>
-      {toast.type === "success" ? <Ico.CheckCircle /> : <Ico.XCircle />}
-      <span>{toast.msg}</span>
+    <div
+      className={`ad-toast ${toast.type}`}
+      style={isDanger ? {
+        background: "#dc2626",
+        border: "1.5px solid #b91c1c",
+        color: "#ffffff",
+        boxShadow: "0 4px 24px rgba(220,38,38,0.5)",
+      } : {}}
+    >
+      {isDanger ? (
+        <span style={{ fontSize: "18px" }}>⚠️</span>
+      ) : toast.type === "success" ? (
+        <Ico.CheckCircle />
+      ) : (
+        <Ico.XCircle />
+      )}
+      <span style={{ fontWeight: "600" }}>{toast.msg}</span>
     </div>
   );
 }
@@ -1051,13 +962,14 @@ function AttacksTab() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ALERTS TAB  ← NEW
+   ALERTS TAB
 ═══════════════════════════════════════════════════════════════ */
 const SEVERITY_FILTERS = [
-  { key: "all",    label: "All" },
-  { key: "high",   label: "High" },
-  { key: "medium", label: "Medium" },
-  { key: "low",    label: "Low" },
+  { key: "all",      label: "All" },
+  { key: "critical", label: "Critical" },
+  { key: "high",     label: "High" },
+  { key: "medium",   label: "Medium" },
+  { key: "low",      label: "Low" },
 ];
 
 function AlertsTab() {
@@ -1069,6 +981,9 @@ function AlertsTab() {
   const [page, setPage]                 = useState(1);
   const [totalPages, setTotalPages]     = useState(1);
   const [total, setTotal]               = useState(0);
+  const [stats, setStats]               = useState({
+    critical: 0, high: 0, medium: 0, low: 0, malware: 0, waf: 0,
+  });
 
   const fetchAlerts = async (p = 1, sev = severityFilter, q = search) => {
     setLoading(true); setError(null);
@@ -1076,97 +991,136 @@ function AlertsTab() {
       const params = new URLSearchParams({ page: p });
       if (sev !== "all") params.append("severity", sev);
       if (q.trim())      params.append("search", q.trim());
-
-      const res = await fetch(`${API}/admin/alerts?${params}`, { headers: authHeaders() });
-      if (!res.ok) throw new Error("Failed to fetch alerts");
+      const res = await fetch(`${API}/admin/notifications?${params}`, { headers: authHeaders() });
+      if (!res.ok) throw new Error("Failed to fetch security notifications");
       const data = await res.json();
-      /* Support both paginated { alerts, pages, total } and plain array */
-      if (Array.isArray(data)) {
-        setAlerts(data); setTotalPages(1); setTotal(data.length);
-      } else {
-        setAlerts(data.alerts ?? []); setTotalPages(data.pages ?? 1);
-        setTotal(data.total ?? 0);    setPage(data.page ?? 1);
-      }
+      setAlerts(data.notifications ?? []);
+      setTotalPages(data.pages ?? 1);
+      setTotal(data.total ?? 0);
+      setPage(data.page ?? 1);
+      if (data.stats) setStats(data.stats);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
 
   useEffect(() => { fetchAlerts(1, "all", ""); }, []);
 
-  const counters = useMemo(() => ({
-    high:   alerts.filter((a) => a.severity === "high").length,
-    medium: alerts.filter((a) => a.severity === "medium").length,
-    low:    alerts.filter((a) => a.severity === "low").length,
-  }), [alerts]);
-
   return (
-    <div className="ad-table-section">
+    <div className="ad-table-section" style={{
+      background: "#0a0e1a",
+      border: "1px solid #1f2937",
+      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.4)"
+    }}>
 
-      {/* ── Summary badges ── */}
-      <div style={{ display: "flex", gap: 12, padding: "18px 28px", borderBottom: "1px solid #f3f4f6", flexWrap: "wrap" }}>
+      {/* ── Cyber HUD Summary Metrics ── */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+        gap: 12,
+        padding: "20px 24px",
+        background: "#080c14",
+        borderBottom: "1px solid #1f2937"
+      }}>
         {[
-          { label: "Total Alerts", value: total,           color: "#6366f1" },
-          { label: "High",         value: counters.high,   color: "#dc2626" },
-          { label: "Medium",       value: counters.medium, color: "#d97706" },
-          { label: "Low",          value: counters.low,    color: "#059669" },
+          { label: "Total Alerts",      value: total,         color: "#38bdf8", shadow: "rgba(56,189,248,0.25)" },
+          { label: "Malware Blocked",   value: stats.malware, color: "#ef4444", shadow: "rgba(239,68,68,0.25)",   pulse: stats.malware > 0 },
+          { label: "WAF Blocks",        value: stats.waf,     color: "#f59e0b", shadow: "rgba(245,158,11,0.25)" },
+          { label: "Critical Anomalies",value: stats.critical,color: "#ec4899", shadow: "rgba(236,72,153,0.25)" },
         ].map((s) => (
-          <div key={s.label} style={{ background: "#f9fafb", border: "1.5px solid #e5e7eb", borderRadius: 10, padding: "10px 18px", textAlign: "center", minWidth: 90 }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: s.color, fontFamily: "'Playfair Display',serif" }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</div>
+          <div key={s.label} style={{
+            background: "#0f172a", border: "1px solid #1e293b", borderRadius: 10,
+            padding: "14px 18px", boxShadow: "0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)",
+            position: "relative", overflow: "hidden"
+          }}>
+            <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 2, background: `linear-gradient(90deg, ${s.color}, transparent)` }} />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "10.5px", color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>{s.label}</span>
+              {s.pulse && <span style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: "#ef4444", boxShadow: "0 0 6px #ef4444", display: "inline-block" }} />}
+            </div>
+            <div style={{ fontSize: "24px", fontWeight: 800, color: s.color, marginTop: 6, fontFamily: "'JetBrains Mono','Fira Code',monospace", textShadow: `0 0 8px ${s.shadow}` }}>{s.value}</div>
           </div>
         ))}
       </div>
 
-      {/* ── Header ── */}
-      <div className="ad-table-header">
+      {/* ── Cyber Header ── */}
+      <div className="ad-table-header" style={{ background: "#0b0f19", borderBottom: "1px solid #1f2937", padding: "18px 24px" }}>
         <div>
-          <div className="ad-table-title">Security Alerts</div>
-          <div className="ad-table-count">{total} alert{total !== 1 ? "s" : ""} recorded</div>
+          <div className="ad-table-title" style={{ color: "#f8fafc", fontSize: "16px" }}>Threat Intelligence Console</div>
+          <div className="ad-table-count" style={{ color: "#64748b", fontSize: "12px" }}>Real-time audit log correlation & perimeter analysis</div>
         </div>
-        <button className="ad-refresh-btn" onClick={() => fetchAlerts(page, severityFilter, search)} disabled={loading}>
+        <button className="ad-refresh-btn"
+          style={{ background: "#1e293b", border: "1px solid #334155", color: "#f8fafc", borderRadius: 8, cursor: "pointer", padding: "8px 14px", fontSize: "12.5px" }}
+          onClick={() => fetchAlerts(page, severityFilter, search)} disabled={loading}
+        >
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ width: 14, height: 14, display: "flex" }}><Ico.RefreshCw /></span>Refresh
+            <span style={{ width: 14, height: 14, display: "flex" }}><Ico.RefreshCw /></span>Refresh Console
           </span>
         </button>
       </div>
 
-      {/* ── Filters ── */}
-      <div className="ad-table-toolbar" style={{ flexWrap: "wrap", gap: 8 }}>
-        <div className="ad-search-wrap">
-          <span className="ad-search-icon"><Ico.Search /></span>
-          <input className="ad-search" placeholder="Search by type, message or IP…" value={search}
+      {/* ── Dark-Themed Toolbar ── */}
+      <div className="ad-table-toolbar" style={{ background: "#080c14", borderBottom: "1px solid #1f2937", padding: "12px 24px", display: "flex", flexWrap: "wrap", gap: 12 }}>
+        <div className="ad-search-wrap" style={{ maxWidth: 360 }}>
+          <span className="ad-search-icon" style={{ color: "#475569" }}><Ico.Search /></span>
+          <input className="ad-search"
+            style={{ background: "#0f172a", border: "1px solid #1e293b", color: "#f8fafc", outline: "none", boxSizing: "border-box" }}
+            placeholder="Search by payload, type or source IP…" value={search}
             onChange={(e) => { setSearch(e.target.value); fetchAlerts(1, severityFilter, e.target.value); }} />
         </div>
-        <div className="ad-filter-pills">
+        <div className="ad-filter-pills" style={{ display: "flex", gap: 8 }}>
           {SEVERITY_FILTERS.map((f) => (
-            <button key={f.key} className={`ad-pill ${severityFilter === f.key ? "active" : ""}`}
+            <button key={f.key}
+              style={{
+                height: 36, padding: "0 16px", borderRadius: 8,
+                border: severityFilter === f.key ? "1px solid #3b82f6" : "1px solid #1e293b",
+                background: severityFilter === f.key ? "rgba(59,130,246,0.15)" : "#0f172a",
+                color: severityFilter === f.key ? "#38bdf8" : "#94a3b8",
+                fontWeight: 600, fontSize: "12.5px", cursor: "pointer",
+                boxShadow: severityFilter === f.key ? "0 0 10px rgba(59,130,246,0.15)" : "none",
+                transition: "all 0.2s"
+              }}
               onClick={() => { setSeverityFilter(f.key); fetchAlerts(1, f.key, search); }}>{f.label}</button>
           ))}
         </div>
       </div>
 
       {/* ── Content ── */}
-      <div style={{ padding: "20px 24px" }}>
+      <div style={{ padding: "20px 24px", background: "#0a0e1a" }}>
         {loading ? (
-          <div className="ad-loading" style={{ padding: "48px" }}><span className="ad-spinner dark" /><p>Loading alerts…</p></div>
+          <div className="ad-loading" style={{ padding: "64px", background: "#0a0e1a", color: "#64748b" }}>
+            <span className="ad-spinner dark" style={{ borderColor: "#38bdf8 transparent #38bdf8 transparent" }} />
+            <p style={{ marginTop: 12 }}>Syncing threat database...</p>
+          </div>
         ) : error ? (
-          <div className="ad-error-box" style={{ margin: "0 0 24px" }}>{error}</div>
+          <div className="ad-error-box" style={{ margin: "0 0 24px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5" }}>{error}</div>
         ) : (
+          /* ── MODIFICATION 2 : appel correct à <AlertsList alerts={alerts} /> ── */
           <AlertsList alerts={alerts} />
         )}
       </div>
 
-      {/* ── Pagination ── */}
+      {/* ── Dark-Themed Pagination ── */}
       {totalPages > 1 && !loading && (
-        <div className="ad-pagination">
-          <span className="ad-page-info">Page {page} of {totalPages} · {total} total</span>
-          <div className="ad-page-btns">
-            <button className="ad-page-btn" onClick={() => fetchAlerts(page - 1)} disabled={page === 1}><Ico.ChevronLeft /></button>
+        <div className="ad-pagination" style={{ background: "#080c14", borderTop: "1px solid #1f2937", padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span className="ad-page-info" style={{ color: "#64748b", fontSize: "12.5px" }}>
+            Showing telemetry segment {page} of {totalPages} · <span style={{ color: "#94a3b8" }}>{total} matches</span>
+          </span>
+          <div className="ad-page-btns" style={{ display: "flex", gap: 6 }}>
+            <button className="ad-page-btn"
+              style={{ background: "#0f172a", border: "1px solid #1e293b", color: "#94a3b8", width: 34, height: 34, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.4 : 1 }}
+              onClick={() => fetchAlerts(page - 1)} disabled={page === 1}><Ico.ChevronLeft /></button>
             {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
               const n = totalPages <= 7 ? i + 1 : page <= 4 ? i + 1 : page >= totalPages - 3 ? totalPages - 6 + i : page - 3 + i;
-              return <button key={n} className={`ad-page-btn${page === n ? " active" : ""}`} onClick={() => fetchAlerts(n)}>{n}</button>;
+              const isActive = page === n;
+              return (
+                <button key={n}
+                  style={{ background: isActive ? "rgba(59,130,246,0.15)" : "#0f172a", border: isActive ? "1px solid #3b82f6" : "1px solid #1e293b", color: isActive ? "#38bdf8" : "#94a3b8", fontWeight: 600, width: 34, height: 34, borderRadius: 6, cursor: "pointer", boxShadow: isActive ? "0 0 8px rgba(59,130,246,0.15)" : "none" }}
+                  onClick={() => fetchAlerts(n)}>{n}</button>
+              );
             })}
-            <button className="ad-page-btn" onClick={() => fetchAlerts(page + 1)} disabled={page === totalPages}><Ico.ChevronRight /></button>
+            <button className="ad-page-btn"
+              style={{ background: "#0f172a", border: "1px solid #1e293b", color: "#94a3b8", width: 34, height: 34, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", cursor: page === totalPages ? "not-allowed" : "pointer", opacity: page === totalPages ? 0.4 : 1 }}
+              onClick={() => fetchAlerts(page + 1)} disabled={page === totalPages}><Ico.ChevronRight /></button>
           </div>
         </div>
       )}
@@ -1190,6 +1144,44 @@ export default function AdminPanel({ onLogout }) {
   const [updating, setUpdating]         = useState(false);
   const [loggingOut, setLoggingOut]     = useState(false);
   const [toast, setToast]               = useState(null);
+
+  /* ── MODIFICATION 1 : state + polling toutes les 8s ── */
+  const [lastCheck, setLastCheck] = useState(() => new Date().toISOString());
+
+  useEffect(() => {
+    const checkUnreadNotifications = async () => {
+      try {
+        const res = await fetch(`${API}/admin/notifications/unread?since=${lastCheck}`, {
+          headers: authHeaders(),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Mettre à jour le timestamp immédiatement
+        setLastCheck(new Date().toISOString());
+
+        if (data.new_alerts && data.new_alerts.length > 0) {
+          const latest = data.new_alerts[0];
+
+          setToast({
+            type: latest.severity === "critical" || latest.severity === "high" ? "danger" : "success",
+            msg: `🚨 Security Alert: ${latest.message}`,
+          });
+
+          // Son de notification discret
+          const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/951/951-200.wav");
+          audio.volume = 0.2;
+          audio.play().catch(() => {});
+        }
+      } catch (e) {
+        console.error("SOC Polling error:", e);
+      }
+    };
+
+    const interval = setInterval(checkUnreadNotifications, 8000);
+    return () => clearInterval(interval);
+  }, [lastCheck]);
+  /* ── fin modification 1 ── */
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -1256,7 +1248,7 @@ export default function AdminPanel({ onLogout }) {
     users:    { title: "User Management",  sub: "View, search, update roles and remove users." },
     logs:     { title: "Audit Logs",       sub: "Full record of all system actions." },
     attacks:  { title: "Attack Logs",      sub: "Blocked XSS, SQLi and anomaly detection." },
-    alerts:   { title: "Security Alerts",  sub: "Real-time security alerts and notifications." }, // ← NEW
+    alerts:   { title: "Security Alerts",  sub: "Real-time security alerts and notifications." },
   };
 
   return (
@@ -1317,6 +1309,7 @@ export default function AdminPanel({ onLogout }) {
               {active === "users"    && <UsersTab users={users} viewerRole={viewerRole} onDelete={setToDelete} onUpdate={setToUpdate} />}
               {active === "logs"     && <LogsTab />}
               {active === "attacks"  && <AttacksTab />}
+              {/* ── MODIFICATION 2 : onglet Alerts → <AlertsTab /> correct ── */}
               {active === "alerts"   && <AlertsTab />}
             </>
           )}

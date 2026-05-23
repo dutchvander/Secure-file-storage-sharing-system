@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Models\Alert;
+use App\Models\AttackLog;
 
 class FileController extends Controller
 {
@@ -63,7 +64,7 @@ class FileController extends Controller
         copy($uploadedFile->getRealPath(), $tempPath);
 
         try {
-            $scanResult = $this->scanFile($tempPath);
+            $scanResult = $this->scanFile($tempPath, $uploadedFile->getClientOriginalName());
         } catch (\Exception $e) {
             @unlink($tempPath);
             return response()->json(['message' => 'Security scanner is unavailable. Upload blocked for safety.'], 503);
@@ -329,7 +330,7 @@ class FileController extends Controller
             })->exists();
     }
 
-    private function scanFile(string $filePath): string
+    private function scanFile(string $filePath, string $originalName = ''): string
     {
         $socket = @fsockopen('127.0.0.1', 3310, $errno, $errstr, 10);
         if (!$socket) throw new \Exception("ClamAV connection failed: $errstr ($errno)");
@@ -353,6 +354,23 @@ if (str_contains($response, 'FOUND')) {
             'file_scan' => 'clamav',
             'result' => $response
         ])
+    ]);
+
+    AttackLog::create([
+        'ip' => request()->ip(),
+        'type' => 'Malware',
+        'payload' => json_encode([
+            'file_name' => $originalName,
+            'clamav_result' => trim($response),
+            'user_id' => auth()->id(),
+            'user_name' => auth()->user()?->name ?? 'Unknown',
+        ]),
+        'method' => 'POST',
+        'url' => request()->fullUrl(),
+        'user_agent' => request()->userAgent(),
+        'source' => 'clamav',
+        'status' => 'blocked',
+        'score' => 100,
     ]);
 
     return 'infected';

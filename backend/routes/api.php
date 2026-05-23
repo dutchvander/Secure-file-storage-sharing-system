@@ -63,8 +63,9 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 
     Route::get('/attack-logs',        [AttackLogController::class, 'index']);
     Route::get('/attack-logs/stats',  [AttackLogController::class, 'stats']);
-    // Alerts
     Route::get('/alerts', [AdminController::class, 'getAlerts']); // ✅
+    Route::get('/notifications', [AdminController::class, 'getNotifications']);
+Route::get('/notifications/unread', [AdminController::class, 'getUnreadNotifications']);
 });
 
 
