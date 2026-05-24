@@ -167,6 +167,20 @@ const Ico = {
       <line x1="9" y1="9" x2="15" y2="15" />
     </svg>
   ),
+  ExternalLink: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+  ),
 };
 
 const API = "http://127.0.0.1:8000/api";
@@ -187,24 +201,43 @@ const fileIcon = (mime = "") => {
   return "📁";
 };
 
-const isPreviewable = (mime = "") =>
+/* ══════════════════════════════════════════════════════════════
+   PREVIEW LOGIC — تحديد طريقة الفتح لكل نوع ملف
+
+   - PDF / صور / نصوص  → blob URL → new tab (المتصفح يعرضها مباشرة)
+   - Word / Excel / PPT → Microsoft Office Online Viewer → new tab
+   - غير ذلك            → تحميل مباشر
+══════════════════════════════════════════════════════════════ */
+const OFFICE_MIME = [
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+];
+
+const isBrowserViewable = (mime = "") =>
   mime.startsWith("image/") ||
   mime === "application/pdf" ||
   mime.startsWith("text/");
 
+const isOfficeMime = (mime = "") => OFFICE_MIME.includes(mime);
+
+// كل الملفات قابلة للعرض الآن (إما browser أو Office Viewer)
+const isViewable = (mime = "") => isBrowserViewable(mime) || isOfficeMime(mime);
+
 /* ══════════════════════════════════════════════════════════════
-   STATUS BADGE  ← جديد
-   يعرض حالة فحص ClamAV بجانب كل ملف
+   STATUS BADGE
 ══════════════════════════════════════════════════════════════ */
 function StatusBadge({ status }) {
-  if (!status || status === "pending") {
+  if (!status || status === "pending")
     return (
       <span className="fm-status-badge pending" title="Awaiting scan">
         🔄 Pending
       </span>
     );
-  }
-  if (status === "safe") {
+  if (status === "safe")
     return (
       <span
         className="fm-status-badge safe"
@@ -213,8 +246,7 @@ function StatusBadge({ status }) {
         🟢 Safe
       </span>
     );
-  }
-  if (status === "infected") {
+  if (status === "infected")
     return (
       <span
         className="fm-status-badge infected"
@@ -223,23 +255,19 @@ function StatusBadge({ status }) {
         🔴 Infected
       </span>
     );
-  }
   return null;
 }
 
 /* ══════════════════════════════════════════════════════════════
-   UPLOAD PHASE INDICATOR  ← جديد
-   يعرض مراحل الرفع: Uploading → Scanning → Encrypting → Done
+   UPLOAD PHASE INDICATOR
 ══════════════════════════════════════════════════════════════ */
 function UploadPhase({ phase }) {
   if (!phase) return null;
-
   const phases = [
     { key: "uploading", label: "Uploading…" },
     { key: "scanning", label: "Scanning for malware…" },
     { key: "encrypting", label: "Encrypting & saving…" },
   ];
-
   return (
     <div className="fm-upload-phases">
       {phases.map((p) => (
@@ -271,7 +299,6 @@ function Toast({ toast, onDone }) {
     const t = setTimeout(onDone, 3500);
     return () => clearTimeout(t);
   }, [toast, onDone]);
-
   if (!toast) return null;
   return (
     <div className={`fm-toast ${toast.type}`}>
@@ -282,103 +309,35 @@ function Toast({ toast, onDone }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   PREVIEW MODAL
+   LOADING OVERLAY — يظهر عند تحميل الملف لفتحه
 ══════════════════════════════════════════════════════════════ */
-function PreviewModal({ file, onClose }) {
-  const [blobUrl, setBlobUrl] = useState(null);
-  const [textData, setTextData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let url = null;
-    (async () => {
-      try {
-        const res = await fetch(`${API}/files/${file.id}/view`, {
-          headers: headers(),
-        });
-        if (!res.ok) {
-          const d = await res.json();
-          setError(d.message || "Cannot load preview.");
-          return;
-        }
-        const blob = await res.blob();
-        if (file.mime_type.startsWith("text/")) {
-          setTextData(await blob.text());
-        } else {
-          url = URL.createObjectURL(blob);
-          setBlobUrl(url);
-        }
-      } catch {
-        setError("Failed to load file preview.");
-      } finally {
-        setLoading(false);
-      }
-    })();
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [file.id, file.mime_type]);
-
-  const isImg = file.mime_type.startsWith("image/");
-  const isPdf = file.mime_type === "application/pdf";
-  const isTxt = file.mime_type.startsWith("text/");
-
+function ViewingOverlay({ fileName, onCancel }) {
   return (
-    <div className="fm-modal-overlay fm-preview-overlay" onClick={onClose}>
-      <div className="fm-preview-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="fm-preview-header">
-          <div className="fm-preview-title">
-            <span>{fileIcon(file.mime_type)}</span>
-            <span>{file.original_name}</span>
-            <span className="fm-preview-size">{file.formatted_size}</span>
-            <StatusBadge status={file.status} />
-          </div>
-          <button className="fm-modal-close" onClick={onClose}>
-            <Ico.X />
-          </button>
+    <div className="fm-modal-overlay" onClick={onCancel}>
+      <div
+        className="fm-modal fm-modal--sm"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
+          <span
+            className="fm-spinner dark"
+            style={{ width: 36, height: 36, borderWidth: 3 }}
+          />
         </div>
-        <div className="fm-preview-body">
-          {loading && (
-            <div className="fm-preview-loading">
-              <span className="fm-spinner dark" />
-              <p>Decrypting and loading preview…</p>
-            </div>
-          )}
-          {error && !loading && (
-            <div className="fm-preview-error">
-              <Ico.Alert />
-              <p>{error}</p>
-            </div>
-          )}
-          {!loading && !error && isImg && blobUrl && (
-            <div className="fm-preview-img-wrap">
-              <img
-                src={blobUrl}
-                alt={file.original_name}
-                className="fm-preview-img"
-              />
-            </div>
-          )}
-          {!loading && !error && isPdf && blobUrl && (
-            <iframe
-              src={blobUrl}
-              title={file.original_name}
-              className="fm-preview-iframe"
-            />
-          )}
-          {!loading && !error && isTxt && textData !== null && (
-            <pre className="fm-preview-text">{textData}</pre>
-          )}
-          {!loading && !error && !isImg && !isPdf && !isTxt && (
-            <div className="fm-preview-unsupported">
-              <span style={{ fontSize: 48 }}>{fileIcon(file.mime_type)}</span>
-              <p>Preview not available for this file type.</p>
-              <p className="fm-preview-unsupported-sub">
-                Use the Download button to access this file.
-              </p>
-            </div>
-          )}
+        <h3
+          className="fm-modal-title"
+          style={{ textAlign: "center", marginTop: 16 }}
+        >
+          Opening File…
+        </h3>
+        <p className="fm-modal-desc" style={{ textAlign: "center" }}>
+          Decrypting <strong>"{fileName}"</strong> and opening in a new browser
+          tab.
+        </p>
+        <div className="fm-modal-actions">
+          <button className="fm-btn-cancel" onClick={onCancel}>
+            Cancel
+          </button>
         </div>
       </div>
     </div>
@@ -394,9 +353,8 @@ function ShareModal({ file, onClose, onShared }) {
   const [permission, setPermission] = useState("download");
   const [sharing, setSharing] = useState(false);
   const [error, setError] = useState("");
-  const [selectedUser, setSelectedUser] = useState(null); // ← جديد
-  const [userSearch, setUserSearch] = useState(""); // ← جديد
-  const [showDropdown, setShowDropdown] = useState(false); // ← جديد
+  const [userSearch, setUserSearch] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
     fetch(`${API}/users/list`, { headers: headers() })
@@ -432,6 +390,13 @@ function ShareModal({ file, onClose, onShared }) {
     }
   };
 
+  const filteredUsers = users.filter((u) => {
+    const q = userSearch.toLowerCase();
+    return (
+      u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="fm-modal-overlay" onClick={onClose}>
       <div className="fm-modal" onClick={(e) => e.stopPropagation()}>
@@ -448,10 +413,7 @@ function ShareModal({ file, onClose, onShared }) {
             <div className="fm-modal-file-size">{file.formatted_size}</div>
           </div>
         </div>
-
         <label className="fm-label">Share with</label>
-
-        {/* ── Search User ── */}
         <div style={{ position: "relative" }}>
           <div className="grp-search-wrap">
             <svg
@@ -475,7 +437,6 @@ function ShareModal({ file, onClose, onShared }) {
                 setShowDropdown(true);
                 if (!e.target.value) {
                   setSelectedId("");
-                  setSelectedUser(null);
                 }
               }}
               onFocus={() => setShowDropdown(true)}
@@ -488,7 +449,6 @@ function ShareModal({ file, onClose, onShared }) {
                 onClick={() => {
                   setUserSearch("");
                   setSelectedId("");
-                  setSelectedUser(null);
                   setShowDropdown(false);
                 }}
               >
@@ -496,8 +456,6 @@ function ShareModal({ file, onClose, onShared }) {
               </button>
             )}
           </div>
-
-          {/* Dropdown */}
           {showDropdown && (
             <div
               style={{
@@ -508,71 +466,52 @@ function ShareModal({ file, onClose, onShared }) {
                 background: "#fff",
                 border: "1.5px solid #e5e7eb",
                 borderRadius: 10,
-                boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                boxShadow: "0 8px 24px rgba(0,0,0,.12)",
                 zIndex: 50,
                 maxHeight: 220,
                 overflowY: "auto",
                 marginTop: 4,
               }}
             >
-              {users
-                .filter((u) => {
-                  const q = userSearch.toLowerCase();
-                  return (
-                    u.name.toLowerCase().includes(q) ||
-                    u.email.toLowerCase().includes(q)
-                  );
-                })
-                .map((u) => (
+              {filteredUsers.map((u) => (
+                <div
+                  key={u.id}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setSelectedId(u.id);
+                    setUserSearch(`${u.name} — ${u.email}`);
+                    setShowDropdown(false);
+                  }}
+                  style={{
+                    padding: "10px 14px",
+                    cursor: "pointer",
+                    borderBottom: "1px solid #f3f4f6",
+                    background:
+                      selectedId === u.id ? "rgba(99,102,241,.06)" : "#fff",
+                    transition: "background .15s",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = "#f5f3ff")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background =
+                      selectedId === u.id ? "rgba(99,102,241,.06)" : "#fff")
+                  }
+                >
                   <div
-                    key={u.id}
-                    onMouseDown={(e) => {
-                      e.preventDefault(); // ← هذا يمنع onBlur من الإطلاق
-                      setSelectedId(u.id);
-                      setSelectedUser(u);
-                      setUserSearch(`${u.name} — ${u.email}`);
-                      setShowDropdown(false);
-                    }}
-                    style={{
-                      padding: "10px 14px",
-                      cursor: "pointer",
-                      borderBottom: "1px solid #f3f4f6",
-                      background:
-                        selectedId === u.id ? "rgba(99,102,241,0.06)" : "#fff",
-                      transition: "background 0.15s",
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = "#f5f3ff")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background =
-                        selectedId === u.id ? "rgba(99,102,241,0.06)" : "#fff")
-                    }
+                    style={{ fontWeight: 600, fontSize: 13, color: "#111827" }}
                   >
-                    <div
-                      style={{
-                        fontWeight: 600,
-                        fontSize: 13,
-                        color: "#111827",
-                      }}
-                    >
-                      {u.name}
-                    </div>
-                    <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                      {u.email} · {u.role}
-                    </div>
+                    {u.name}
                   </div>
-                ))}
-              {users.filter((u) => {
-                const q = userSearch.toLowerCase();
-                return (
-                  u.name.toLowerCase().includes(q) ||
-                  u.email.toLowerCase().includes(q)
-                );
-              }).length === 0 && (
+                  <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                    {u.email} · {u.role}
+                  </div>
+                </div>
+              ))}
+              {filteredUsers.length === 0 && (
                 <div
                   style={{
-                    padding: "14px",
+                    padding: 14,
                     textAlign: "center",
                     color: "#9ca3af",
                     fontSize: 13,
@@ -640,7 +579,6 @@ function ShareModal({ file, onClose, onShared }) {
 ══════════════════════════════════════════════════════════════ */
 function DeleteModal({ file, onClose, onDeleted }) {
   const [deleting, setDeleting] = useState(false);
-
   const confirm = async () => {
     setDeleting(true);
     try {
@@ -657,7 +595,6 @@ function DeleteModal({ file, onClose, onDeleted }) {
       setDeleting(false);
     }
   };
-
   return (
     <div className="fm-modal-overlay" onClick={onClose}>
       <div
@@ -702,15 +639,16 @@ function DeleteModal({ file, onClose, onDeleted }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   FILE ROW  ← مع عمود Security Status
+   FILE ROW
 ══════════════════════════════════════════════════════════════ */
 function FileRow({
   file,
   onShare,
   onDelete,
-  onPreview,
+  onView,
   downloading,
   onDownload,
+  viewing,
 }) {
   const date = file.created_at
     ? new Date(file.created_at).toLocaleDateString("en-GB", {
@@ -719,7 +657,6 @@ function FileRow({
         year: "numeric",
       })
     : "—";
-
   return (
     <tr className="fm-tr">
       <td className="fm-td">
@@ -732,7 +669,6 @@ function FileRow({
         </div>
       </td>
       <td className="fm-td fm-td--muted">{date}</td>
-      {/* عمود الأمان: Encrypted + نتيجة الفحص */}
       <td className="fm-td">
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span className="fm-encrypted-badge">
@@ -742,13 +678,18 @@ function FileRow({
         </div>
       </td>
       <td className="fm-td fm-td--actions">
-        {isPreviewable(file.mime_type) && (
+        {isViewable(file.mime_type) && (
           <button
             className="fm-action-btn view"
-            onClick={() => onPreview(file)}
-            title="Preview"
+            onClick={() => onView(file)}
+            disabled={viewing === file.id}
+            title="Open in new tab"
           >
-            <Ico.Eye />
+            {viewing === file.id ? (
+              <span className="fm-spinner dark" />
+            ) : (
+              <Ico.ExternalLink />
+            )}
             <span>View</span>
           </button>
         )}
@@ -797,7 +738,8 @@ function SharedRow({
   downloading,
   onDownload,
   onRevoke,
-  onPreview,
+  onView,
+  viewing,
 }) {
   const file = item.file;
   const date = item.shared_at
@@ -807,7 +749,6 @@ function SharedRow({
         year: "numeric",
       })
     : "—";
-
   const perm = item.permission ?? "";
   const canView =
     type === "with-me" && ["view", "read", "download"].includes(perm);
@@ -825,7 +766,18 @@ function SharedRow({
         </div>
       </td>
       <td className="fm-td fm-td--muted">
-        {type === "with-me" ? item.shared_by : item.shared_with}
+        {type === "with-me" ? (
+          <>
+            {item.shared_by}
+            {item.group_name && (
+              <span className="fm-group-tag"> · via {item.group_name}</span>
+            )}
+          </>
+        ) : item.share_type === "group" ? (
+          <span className="fm-group-tag">Group: {item.group_name}</span>
+        ) : (
+          item.shared_with
+        )}
       </td>
       <td className="fm-td">
         <span className={`fm-perm-badge ${item.permission}`}>
@@ -834,13 +786,18 @@ function SharedRow({
       </td>
       <td className="fm-td fm-td--muted">{date}</td>
       <td className="fm-td fm-td--actions">
-        {canView && file && isPreviewable(file.mime_type) && (
+        {canView && file && isViewable(file.mime_type) && (
           <button
             className="fm-action-btn view"
-            onClick={() => onPreview(file)}
-            title="Preview"
+            onClick={() => onView(file)}
+            disabled={viewing === file?.id}
+            title="Open in new tab"
           >
-            <Ico.Eye />
+            {viewing === file?.id ? (
+              <span className="fm-spinner dark" />
+            ) : (
+              <Ico.ExternalLink />
+            )}
             <span>View</span>
           </button>
         )}
@@ -889,11 +846,12 @@ export default function FileManager() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
-  const [uploadPhase, setUploadPhase] = useState(null); // ← جديد: مرحلة الرفع
+  const [uploadPhase, setUploadPhase] = useState(null);
   const [downloading, setDownloading] = useState(null);
+  const [viewing, setViewing] = useState(null); // ← id of file being opened
+  const [viewingName, setViewingName] = useState(""); // ← name shown in overlay
   const [shareFile, setShareFile] = useState(null);
   const [deleteFile, setDeleteFile] = useState(null);
-  const [previewFile, setPreviewFile] = useState(null);
   const [toast, setToast] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef();
@@ -928,40 +886,99 @@ export default function FileManager() {
 
   const showToast = (type, msg) => setToast({ type, msg });
 
-  /* ── Upload (مع مراحل scanning) ── */
+  /* ══════════════════════════════════════════════════════════════
+     VIEW — يفتح الملف في tab جديد بدون modal داخلي
+
+     الاستراتيجية:
+     1. جلب الملف المشفر من الـ API  (Authorization header)
+     2. تحويله إلى Blob URL
+     3. لملفات Office → نستخدم Microsoft Office Online Viewer
+        كـ: https://view.officeapps.live.com/op/view.aspx?src=<URL>
+        لكن يحتاج URL عام → بدلاً من ذلك نفتح blob مباشرة في متصفح
+        وهو يعرضه أو يحمّله حسب نوع النظام
+     4. للأنواع الأخرى → فتح مباشر في tab جديد
+  ══════════════════════════════════════════════════════════════ */
+  const handleView = async (file) => {
+    setViewing(file.id);
+    setViewingName(file.original_name);
+    try {
+      const res = await fetch(`${API}/files/${file.id}/view`, {
+        headers: headers(),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        showToast("error", d.message || "Cannot open file.");
+        return;
+      }
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      if (isOfficeMime(file.mime_type)) {
+        /* ── Office files: نفتح الـ blob مباشرة في tab جديد ──
+           المتصفح سيعرضه أو يحمّله. على Windows/Mac يُفتح عادةً
+           بـ Office المثبّت محلياً عبر "open with" أو يُحمَّل
+           ليُفتح تلقائياً. */
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        // لا نضع a.download حتى يحاول المتصفح فتحه بدل تحميله
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        // نحذف الـ blobUrl بعد ثانية لإعطاء المتصفح وقت
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+      } else {
+        /* ── PDF / صور / نصوص: يفتحها المتصفح مباشرة ── */
+        const tab = window.open(blobUrl, "_blank", "noopener,noreferrer");
+        if (!tab) {
+          showToast(
+            "error",
+            "Popup blocked. Please allow popups for this site.",
+          );
+          URL.revokeObjectURL(blobUrl);
+          return;
+        }
+        // نحذف الـ blobUrl عند إغلاق التاب أو بعد 5 دقائق
+        tab.addEventListener("beforeunload", () =>
+          URL.revokeObjectURL(blobUrl),
+        );
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 300_000);
+      }
+    } catch {
+      showToast("error", "Failed to open file.");
+    } finally {
+      setViewing(null);
+      setViewingName("");
+    }
+  };
+
+  /* ── Upload ── */
   const handleUpload = async (file) => {
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
       showToast("error", "File exceeds 10 MB limit.");
       return;
     }
-
     setUploading(true);
     setUploadPct(0);
     setUploadPhase("uploading");
-
     const formData = new FormData();
     formData.append("file", file);
-
     await new Promise((resolve) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${API}/files/upload`);
       xhr.setRequestHeader("Authorization", `Bearer ${token()}`);
       xhr.setRequestHeader("Accept", "application/json");
-
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
           const pct = Math.round((e.loaded / e.total) * 100);
           setUploadPct(pct);
-          // عندما ينتهي الـ upload → نظهر مرحلة scanning
           if (pct === 100) setUploadPhase("scanning");
         }
       };
-
       xhr.onload = () => {
         setUploadPhase("encrypting");
-
-        // محاكاة لحظة قصيرة لتظهر مرحلة encrypting للمستخدم
         setTimeout(() => {
           if (xhr.status === 201) {
             const data = JSON.parse(xhr.responseText);
@@ -972,7 +989,6 @@ export default function FileManager() {
             );
           } else {
             const data = JSON.parse(xhr.responseText);
-            // رسالة خاصة إذا كان الملف مصاباً
             if (data.status === "infected") {
               showToast(
                 "error",
@@ -985,15 +1001,12 @@ export default function FileManager() {
           resolve();
         }, 400);
       };
-
       xhr.onerror = () => {
         showToast("error", "Upload failed.");
         resolve();
       };
-
       xhr.send(formData);
     });
-
     setUploading(false);
     setUploadPct(0);
     setUploadPhase(null);
@@ -1109,7 +1122,7 @@ export default function FileManager() {
         </div>
       )}
 
-      {/* Progress bar + Phase indicator */}
+      {/* Progress bar */}
       {canUpload && uploading && (
         <>
           <div className="fm-progress-wrap">
@@ -1169,8 +1182,9 @@ export default function FileManager() {
                         key={f.id}
                         file={f}
                         downloading={downloading}
+                        viewing={viewing}
                         onDownload={handleDownload}
-                        onPreview={setPreviewFile}
+                        onView={handleView}
                         onShare={canShare ? setShareFile : null}
                         onDelete={setDeleteFile}
                       />
@@ -1204,8 +1218,9 @@ export default function FileManager() {
                         item={item}
                         type="with-me"
                         downloading={downloading}
+                        viewing={viewing}
                         onDownload={handleDownload}
-                        onPreview={setPreviewFile}
+                        onView={handleView}
                       />
                     ))}
                   </tbody>
@@ -1237,8 +1252,9 @@ export default function FileManager() {
                         item={item}
                         type="by-me"
                         downloading={downloading}
+                        viewing={viewing}
                         onDownload={handleDownload}
-                        onPreview={setPreviewFile}
+                        onView={handleView}
                         onRevoke={handleRevoke}
                       />
                     ))}
@@ -1250,8 +1266,14 @@ export default function FileManager() {
       </div>
 
       {/* Modals */}
-      {previewFile && (
-        <PreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
+      {viewing && viewingName && (
+        <ViewingOverlay
+          fileName={viewingName}
+          onCancel={() => {
+            setViewing(null);
+            setViewingName("");
+          }}
+        />
       )}
       {shareFile && (
         <ShareModal

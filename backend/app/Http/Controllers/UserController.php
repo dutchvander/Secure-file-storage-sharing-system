@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
-use App\Services\SecurityAnalyzerService; // 🔥 مهم
+use App\Services\SecurityAnalyzerService;
 
 class UserController extends Controller
 {
@@ -45,7 +45,7 @@ class UserController extends Controller
 
         $this->log('register', $user->id, $request);
 
-        // 🔥 تحليل سلوك
+        // تحليل سلوك
         app(SecurityAnalyzerService::class)
             ->analyze($user->id, $request->ip());
 
@@ -67,7 +67,7 @@ class UserController extends Controller
 
         $key = 'login|' . Str::lower($request->email) . '|' . $request->ip();
 
-        // 🚫 BLOCKED
+        // BLOCKED
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
             $minutes = ceil($seconds / 60);
@@ -79,7 +79,7 @@ class UserController extends Controller
                 'retry_after_seconds'=> $seconds,
             ]);
 
-            // 🔥 Analyzer
+            // Analyzer
             app(SecurityAnalyzerService::class)
                 ->analyze($blocked?->id, $request->ip());
 
@@ -89,7 +89,7 @@ class UserController extends Controller
             ], 429);
         }
 
-        // ❌ FAILED LOGIN
+        // FAILED LOGIN
         if (!Auth::attempt($request->only('email', 'password'))) {
             RateLimiter::hit($key, 3600);
 
@@ -103,7 +103,7 @@ class UserController extends Controller
                 'attempts_remaining' => $remaining,
             ]);
 
-            // 🔥 Analyzer
+            // Analyzer
             app(SecurityAnalyzerService::class)
                 ->analyze($failed?->id, $request->ip());
 
@@ -113,7 +113,7 @@ class UserController extends Controller
             ], 401);
         }
 
-        // ✅ SUCCESS LOGIN
+        // SUCCESS LOGIN
         RateLimiter::clear($key);
 
         $user  = User::where('email', $request->email)->firstOrFail();
@@ -121,7 +121,7 @@ class UserController extends Controller
 
         $this->log('login', $user->id, $request);
 
-        // 🔥 Analyzer
+        // Analyzer
         app(SecurityAnalyzerService::class)
             ->analyze($user->id, $request->ip());
 
@@ -139,7 +139,7 @@ class UserController extends Controller
     {
         $this->log('logout', auth()->id(), $request);
 
-        // 🔥 Analyzer
+        // Analyzer
         app(SecurityAnalyzerService::class)
             ->analyze(auth()->id(), $request->ip());
 

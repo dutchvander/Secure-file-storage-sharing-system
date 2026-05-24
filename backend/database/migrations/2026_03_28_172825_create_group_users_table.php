@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('group_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->unique(['group_id', 'user_id']); // منع التكرار
+            $table->unique(['group_id', 'user_id']);
         });
     }
 

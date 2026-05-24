@@ -117,7 +117,6 @@ class GroupController extends Controller
             ['shared_by' => auth()->id(), 'permission' => $request->permission]
         );
 
-        // ← 'share_file' بدل 'group_share_file' (أقصر)
         AuditLog::create([
             'user_id'    => auth()->id(),
             'action'     => 'share_file',
@@ -154,7 +153,6 @@ class GroupController extends Controller
             ->where('file_id', $fileId)
             ->delete();
 
-        // ← 'revoke_share' بدل 'group_revoke_share' (أقصر)
         AuditLog::create([
             'user_id'    => auth()->id(),
             'action'     => 'revoke_share',

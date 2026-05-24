@@ -14,10 +14,10 @@ return new class extends Migration
             $table->string('original_name');
             $table->string('stored_name')->unique();
             $table->string('file_path');
-            $table->unsignedBigInteger('file_size');   // bytes
+            $table->unsignedBigInteger('file_size');
             $table->string('mime_type');
-            $table->text('encryption_key');             // مفتاح AES-256 مشفر بـ base64
-            $table->string('hash');                     // SHA-256 للتحقق من السلامة
+            $table->text('encryption_key');
+            $table->string('hash');
             $table->timestamps();
         });
     }

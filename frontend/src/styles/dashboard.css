@@ -3177,7 +3177,9 @@
   color: #111827;
   background: #fafafa;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
   box-sizing: border-box;
 }
 .grp-search-input:focus {
@@ -3209,4 +3211,32 @@
 .grp-search-clear svg {
   width: 11px;
   height: 11px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   إضافات CSS لنظام View الجديد
+   أضف في نهاية dashboard.css
+══════════════════════════════════════════════════════════════ */
+
+/* زر View الجديد (ExternalLink icon) */
+.fm-action-btn.view {
+  color: #6366f1;
+  border-color: rgba(99, 102, 241, 0.25);
+  background: rgba(99, 102, 241, 0.06);
+}
+.fm-action-btn.view:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+/* Group tag في عمود Shared By */
+.fm-group-tag {
+  color: #6366f1;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(99, 102, 241, 0.08);
+  padding: 1px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 2px;
 }

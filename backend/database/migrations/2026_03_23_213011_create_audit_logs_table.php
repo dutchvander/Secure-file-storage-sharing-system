@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('action');
             $table->foreignId('file_id')->nullable()->constrained()->onDelete('set null');
             $table->string('ip_address', 45)->nullable();
-            $table->text('details')->nullable();       // تفاصيل إضافية اختيارية
+            $table->text('details')->nullable();
             $table->timestamp('created_at')->useCurrent();
         });
     }
