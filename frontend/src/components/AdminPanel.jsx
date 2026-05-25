@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import "../styles/admin.css";
 import AlertsList from "./AlertsList";
+import SocChatbot from "./SocChatbot";
 
 /* ═══════════════════════════════════════════════════════════════
    ICONS
@@ -1326,6 +1327,7 @@ export default function AdminPanel({ onLogout }) {
           loading={loggingOut}
         />
       )}
+      <SocChatbot />
     </div>
   );
 }

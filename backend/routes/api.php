@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AttackLogController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\SocChatbotController;
 
 
 /* ── Public ── */
@@ -68,10 +69,14 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 Route::get('/notifications/unread', [AdminController::class, 'getUnreadNotifications']);
 });
 
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::post('/soc-chatbot/message', [SocChatbotController::class, 'handleMessage']);
+    Route::post('/block-ip', [SocChatbotController::class, 'blockIp']);
+});
+
 
 // // test AI bot
 // Route::get('/test-ai', function() {
 //     return ['message' => 'Hello AI'];
 // });
-
 
