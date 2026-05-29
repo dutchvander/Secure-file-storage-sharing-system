@@ -10,15 +10,15 @@ class SecurityAnalyzerService
 {
     public function analyze(?int $userId = null, ?string $ip = null): void
     {
-        $this->checkSuspiciousLogin($userId);
-        $this->checkMassUpload($userId);
+        $this->checkSuspiciousLogin($userId, $ip);
+        $this->checkMassUpload($userId, $ip);
         $this->checkAttackFromIp($ip);
     }
 
     /* =========================
        RULE 1: Suspicious Login
     ========================= */
-    private function checkSuspiciousLogin(?int $userId): void
+    private function checkSuspiciousLogin(?int $userId, ?string $ip = null): void
     {
         if (!$userId) return;
 
@@ -38,7 +38,7 @@ class SecurityAnalyzerService
                 type: 'suspicious_login',
                 severity: 'high',
                 message: 'User had multiple failed logins then succeeded',
-                ip: null,
+                ip: $ip ?? $this->latestKnownUserIp($userId),
                 context: [
                     'failed_attempts' => $failed,
                     'time_window' => '5 minutes'
@@ -50,7 +50,7 @@ class SecurityAnalyzerService
     /* =========================
        RULE 2: Mass Upload
     ========================= */
-    private function checkMassUpload(?int $userId): void
+    private function checkMassUpload(?int $userId, ?string $ip = null): void
     {
         if (!$userId) return;
 
@@ -65,7 +65,7 @@ class SecurityAnalyzerService
                 type: 'mass_upload',
                 severity: 'medium',
                 message: 'User uploaded too many files in short time',
-                ip: null,
+                ip: $ip ?? $this->latestKnownUserIp($userId),
                 context: [
                     'uploads' => $uploads,
                     'time_window' => '1 hour'
@@ -127,5 +127,13 @@ class SecurityAnalyzerService
             'ip' => $ip,
             'context' => $context,
         ]);
+    }
+
+    private function latestKnownUserIp(int $userId): ?string
+    {
+        return AuditLog::where('user_id', $userId)
+            ->whereNotNull('ip_address')
+            ->latest('created_at')
+            ->value('ip_address');
     }
 }
