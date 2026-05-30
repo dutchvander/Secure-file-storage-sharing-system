@@ -50,9 +50,25 @@ class FileController extends Controller
         $request->validate(['file' => 'required|file|max:10240']);
         $uploadedFile = $request->file('file');
 
-        if (!in_array($uploadedFile->getMimeType(), self::ALLOWED_MIME)) {
-            return response()->json(['message' => 'File type not allowed.'], 422);
-        }
+        // if (!in_array($uploadedFile->getMimeType(), self::ALLOWED_MIME)) {
+        //     return response()->json(['message' => 'File type not allowed.'], 422);
+        // }
+
+        try {
+    $mime = $uploadedFile->getMimeType();
+} catch (\Exception $e) {
+    return response()->json([
+        'message' => 'Invalid or suspicious file detected.',
+        'status' => 'infected'
+    ], 400);
+}
+
+if (!in_array($mime, self::ALLOWED_MIME)) {
+    return response()->json([
+        'message' => 'File type not allowed.',
+        'status' => 'infected'
+    ], 422);
+}
 
         if ($uploadedFile->getSize() > self::MAX_SIZE_BYTES) {
             return response()->json(['message' => 'File exceeds 10 MB limit.'], 422);
